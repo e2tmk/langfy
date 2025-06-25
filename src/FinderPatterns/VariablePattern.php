@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace Langfy\StringPatterns;
+namespace Langfy\FinderPatterns;
 
 class VariablePattern extends Pattern
 {

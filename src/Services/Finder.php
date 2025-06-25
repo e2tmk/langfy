@@ -6,12 +6,12 @@ namespace Langfy\Services;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use Langfy\StringPatterns\FunctionPattern;
-use Langfy\StringPatterns\PropertyPattern;
-use Langfy\StringPatterns\VariablePattern;
-use Symfony\Component\Finder\Finder;
+use Langfy\FinderPatterns\FunctionPattern;
+use Langfy\FinderPatterns\PropertyPattern;
+use Langfy\FinderPatterns\VariablePattern;
+use Symfony\Component\Finder\Finder as SymfonyFinder;
 
-class StringFinder
+class Finder
 {
     protected Collection $paths;
 
@@ -43,14 +43,14 @@ class StringFinder
         $this->paths              = collect([]);
         $this->defaultIgnorePaths = array_merge($this->defaultIgnorePaths, config('langfy.finder.ignore_paths', []));
 
-        $this->functionPattern = new FunctionPattern;
-        $this->propertyPattern = new PropertyPattern;
-        $this->variablePattern = new VariablePattern;
+        $this->functionPattern = new FunctionPattern();
+        $this->propertyPattern = new PropertyPattern();
+        $this->variablePattern = new VariablePattern();
     }
 
     public static function in(string | array $paths): self
     {
-        $instance = new self;
+        $instance = new self();
 
         if (is_string($paths)) {
             $paths = [$paths];
@@ -106,7 +106,7 @@ class StringFinder
                 continue;
             }
 
-            $finder = (new Finder)
+            $finder = (new SymfonyFinder())
                 ->files()
                 ->in($path)
                 ->notPath($this->defaultIgnorePaths)
