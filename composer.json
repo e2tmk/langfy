@@ -37,7 +37,10 @@
     "autoload": {
         "psr-4": {
             "Langfy\\": "src/"
-        }
+        },
+        "files": [
+            "src/helpers.php"
+        ]
     },
     "scripts": {
         "format": "vendor/bin/pint"

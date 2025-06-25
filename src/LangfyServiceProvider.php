@@ -4,6 +4,7 @@ declare(strict_types = 1);
 
 namespace Langfy;
 
+use Langfy\Console\Commands\FinderCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -14,6 +15,9 @@ class LangfyServiceProvider extends PackageServiceProvider
         $package
             ->name('langfy')
             ->hasConfigFile()
-            ->hasViews();
+            ->hasViews()
+            ->hasCommands([
+                FinderCommand::class,
+            ]);
     }
 }
