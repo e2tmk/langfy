@@ -39,23 +39,51 @@ class FinderCommand extends Command
 
     private function processTargets(): void
     {
-        if ($this->shouldProcessApplication()) {
+        $hasAppOption     = $this->option('app');
+        $hasModulesOption = filled($this->option('modules'));
+        $modulesEnabled   = Langfy::laravelModulesEnabled();
+
+        // Case 1: --app specified
+        if ($hasAppOption) {
             $this->processApplication();
+
+            if ($modulesEnabled && $this->confirm('Do you want to process modules as well?', false)) {
+                $this->processModulesWithSelection();
+            }
 
             return;
         }
 
-        $this->processModules();
-    }
+        // Case 2: --modules specified
+        if ($hasModulesOption) {
+            $this->processSpecificModules($this->option('modules'));
 
-    /** Decide whether to process the main application or modules */
-    private function shouldProcessApplication(): bool
-    {
-        if ($this->option('app')) {
-            return true;
+            if ($this->confirm('Do you want to process the application as well?', false)) {
+                $this->processApplication();
+            }
+
+            return;
         }
 
-        return ! Langfy::laravelModulesEnabled();
+        // Case 3: No options specified, prompt user
+        $processApp     = $this->confirm('Do you want to process the main application?', true);
+        $processModules = false;
+
+        if ($modulesEnabled) {
+            $processModules = $this->confirm('Do you want to process modules?', false);
+        }
+
+        if ($processApp) {
+            $this->processApplication();
+        }
+
+        if ($processModules) {
+            $this->processModulesWithSelection();
+        }
+
+        if (! $processApp && ! $processModules) {
+            $this->info('No processing selected. Exiting.');
+        }
     }
 
     private function processModules(): void
@@ -214,7 +242,7 @@ class FinderCommand extends Command
         $this->moduleStats[$moduleName] = $stringCount;
 
         if ($stringCount > 0) {
-            // $this->saveStringsToFile($strings, $moduleName, $modulePath);
+            $this->saveStringsToFile($strings, $moduleName, $modulePath);
             $this->modulesToTranslate[$moduleName] = $strings;
         }
     }
