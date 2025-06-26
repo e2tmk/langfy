@@ -104,6 +104,51 @@ class AITranslator
         return $this->ensureAllStringsTranslated($translations->toArray());
     }
 
+    /**
+     * Run translator with configured options
+     *
+     * @return array<string, array<string, string>> Associative array where keys are language codes and values are arrays of translated strings, or a single array of translated strings if only one target language is specified.
+     */
+    public static function quickTranslate(array $strings, string | array | null $toLanguages = null, ?string $fromLanguage = null): array
+    {
+        $singleToLanguage  = is_string($toLanguages);
+        $translatedStrings = collect();
+
+        if (blank($strings)) {
+            return $translatedStrings->toArray();
+        }
+
+        if (is_string($toLanguages)) {
+            $toLanguages = [$toLanguages];
+        }
+
+        if (blank($toLanguages)) {
+            $toLanguages = config()->array('langfy.to_language', []);
+        }
+
+        if (blank($fromLanguage)) {
+            $fromLanguage = config('langfy.from_language', 'en');
+        }
+
+        collect($toLanguages)
+            ->filter(fn ($language): bool => is_string($language) && filled($language))
+            ->each(function (string $language) use ($strings, &$translatedStrings, $fromLanguage): void {
+                $result = self::configure()
+                    ->from($fromLanguage)
+                    ->to($language)
+                    ->run($strings);
+
+                $translatedStrings->put($language, $result);
+            });
+
+        // If only one target language is specified, return the first translated string
+        if ($singleToLanguage && $translatedStrings->isNotEmpty()) {
+            return $translatedStrings->first();
+        }
+
+        return $translatedStrings->toArray();
+    }
+
     protected function translateChunk(Collection $chunk): array
     {
         return $this->getAIProvider()->translate($chunk->toArray());

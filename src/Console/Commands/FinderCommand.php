@@ -7,6 +7,7 @@ namespace Langfy\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 use Langfy\Langfy;
+use Langfy\Services\AITranslator;
 use Langfy\Services\Finder;
 use Nwidart\Modules\Facades\Module;
 
@@ -105,15 +106,14 @@ class FinderCommand extends Command
             return;
         }
 
-        if ($this->option('trans')) {
-            $this->translateFoundStrings();
+        $shouldTranslate = $this->option('trans') || $this->shouldPromptForTranslation();
 
+        if (! $shouldTranslate) {
             return;
         }
 
-        if ($this->shouldPromptForTranslation()) {
-            $this->translateFoundStrings();
-        }
+        $this->info('Translating found strings...');
+        $this->translateFoundStrings();
     }
 
     private function shouldPromptForTranslation(): bool
@@ -261,7 +261,7 @@ class FinderCommand extends Command
 
     protected function translateFoundStrings(): void
     {
-        $toLanguages = config('langfy.to_language', []);
+        $toLanguages = collect(config()->array('langfy.to_language', []));
 
         if (blank($toLanguages)) {
             $this->warn('No target languages configured in langfy.to_language');
@@ -269,9 +269,15 @@ class FinderCommand extends Command
             return;
         }
 
-        $this->info('Target languages: ' . implode(', ', $toLanguages));
+        $this->info('Target languages: ' . implode(', ', $toLanguages->toArray()));
 
-        // TODO: Implement translation logic
+        $toLanguages->each(function (string $language): void {
+            $this->info("Translating to {$language}...");
+
+            $strings = AITranslator::quickTranslate($this->appTranslations, toLanguages: $language);
+
+            $this->saveStringsToFile($strings, $language);
+        });
     }
 
     protected function displaySummary(): void
