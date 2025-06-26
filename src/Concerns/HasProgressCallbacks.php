@@ -36,6 +36,7 @@ trait HasProgressCallbacks
             'completed'           => $current >= $total,
             'remaining'           => $total - $current,
             'remainingPercentage' => $total > 0 ? round(((($total - $current) / $total) * 100), 2) : 0,
+            'extraData'          => $extraData,
             ...$extraData,
         ]);
     }
