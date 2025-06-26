@@ -3,6 +3,19 @@
 declare(strict_types = 1);
 
 return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Context
+    |--------------------------------------------------------------------------
+    |
+    | The context for the translation service. This can be used to provide
+    | additional information about the translation task, such as the
+    | application name or the specific use case for the translations.
+    |
+    */
+    'context' => '',
+
     /*
     |--------------------------------------------------------------------------
     | From Language
@@ -59,11 +72,12 @@ return [
     |--------------------------------------------------------------------------
     |
     | Configuration for AI-powered translation services.
-    | This will be implemented in future versions.
     |
     */
     'ai' => [
-        'model'    => env('LANGFY_AI_MODEL', 'gpt-4o-mini'),
-        'provider' => env('LANGFY_AI_PROVIDER', Prism\Prism\Enums\Provider::OpenAI),
+        'api_key'     => env('LANGFY_AI_API_KEY', ''),
+        'model'       => env('LANGFY_AI_MODEL', 'gpt-4o-mini'),
+        'provider'    => env('LANGFY_AI_PROVIDER', Prism\Prism\Enums\Provider::OpenAI),
+        'temperature' => env('LANGFY_AI_TEMPERATURE', 0.2),
     ],
 ];

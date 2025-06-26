@@ -251,14 +251,8 @@ class FinderCommand extends Command
     {
         $fromLanguage = config('langfy.from_language', 'en');
 
-        $defaultFileName = $fromLanguage;
-        $fileName        = $this->ask(
-            "Save strings to which file? (default: {$defaultFileName})",
-            $defaultFileName
-        );
-
         $langPath = filled($basePath) ? $basePath . '/lang' : lang_path();
-        $filePath = $langPath . '/' . $fileName . '.json';
+        $filePath = $langPath . '/' . $fromLanguage . '.json';
 
         Langfy::saveStringsToFile($strings, $filePath);
 

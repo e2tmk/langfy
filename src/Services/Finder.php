@@ -123,11 +123,11 @@ class Finder
         return array_unique($results);
     }
 
-    protected function findStringsInContent(string $content, string $fileExtension): array
+    public function findStringsInContent(string $content, ?string $fileExtension = null): array
     {
         $strings = [];
 
-        if (in_array($fileExtension, $this->defaultIgnoreExtensions)) {
+        if (filled($fileExtension) && in_array($fileExtension, $this->defaultIgnoreExtensions)) {
             return $strings;
         }
 

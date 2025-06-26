@@ -58,4 +58,17 @@ class Langfy
 
         return optional($module)->getPath();
     }
+
+    public static function normalizeStringsArray(array $strings): array
+    {
+        // If all keys are strings, return as is
+        if (collect($strings)->keys()->every(fn ($key): bool => is_string($key))) {
+            return $strings;
+        }
+
+        // If keys are not strings, convert them to strings
+        return collect($strings)
+            ->mapWithKeys(fn ($string) => [$string => $string])
+            ->toArray();
+    }
 }
