@@ -4,29 +4,49 @@
 
 Langfy is a powerful Laravel package designed to streamline the translation workflow in Laravel applications. It combines intelligent string discovery with AI-powered translation services to automate the traditionally manual process of internationalization (i18n).
 
-### Key Features
+<div class="features-grid">
+  <div class="feature-card">
+    <div class="feature-icon">🔍</div>
+    <h3>Smart String Discovery</h3>
+    <ul>
+      <li>Automatically finds translatable strings in PHP and Blade files</li>
+      <li>Supports multiple pattern types: functions, attributes, and annotations</li>
+      <li>Intelligent filtering to exclude non-translatable content</li>
+      <li>Configurable scanning paths and exclusion rules</li>
+    </ul>
+  </div>
 
-**🔍 Smart String Discovery**
-- Automatically finds translatable strings in PHP and Blade files
-- Supports multiple pattern types: functions, attributes, and annotations
-- Intelligent filtering to exclude non-translatable content
-- Configurable scanning paths and exclusion rules
+  <div class="feature-card">
+    <div class="feature-icon">🤖</div>
+    <h3>AI-Powered Translation</h3>
+    <ul>
+      <li>Integration with OpenAI and other AI providers</li>
+      <li>Context-aware translations that maintain meaning</li>
+      <li>Automatic chunking for large translation batches</li>
+      <li>Retry logic with exponential backoff for reliability</li>
+    </ul>
+  </div>
 
-**🤖 AI-Powered Translation**
-- Integration with OpenAI and other AI providers
-- Context-aware translations that maintain meaning
-- Automatic chunking for large translation batches
-- Retry logic with exponential backoff for reliability
+  <div class="feature-card">
+    <div class="feature-icon">📦</div>
+    <h3>Module Support</h3>
+    <ul>
+      <li>Full compatibility with Laravel Modules (nwidart/laravel-modules)</li>
+      <li>Individual module processing and management</li>
+      <li>Separate language file generation per module</li>
+    </ul>
+  </div>
 
-**📦 Module Support**
-- Full compatibility with Laravel Modules (nwidart/laravel-modules)
-- Individual module processing and management
-- Separate language file generation per module
-
-**🔗 Fluent API**
-- Chainable methods for clean, readable code
-- Intuitive configuration and execution
-- Progress callbacks for real-time feedback
+  <div class="feature-card">
+    <div class="feature-icon">🔗</div>
+    <h3>Fluent API</h3>
+    <ul>
+      <li>Chainable methods for clean, readable code</li>
+      <li>Intuitive configuration and execution</li>
+      <li>Progress callbacks for real-time feedback</li>
+    </ul>
+  </div>
+</div>
 
 ## Quick Start
 
