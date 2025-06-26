@@ -31,3 +31,6 @@ testbench.yaml
 /notes
 /debug
 /examples
+/docs/node_modules
+/docs/.vitepress/cache
+/docs/ignore
