@@ -32,7 +32,7 @@ class Langfy
     protected function __construct(protected Context $context, protected ?string $moduleName = null)
     {
         $this->setupDefaultPaths();
-        $this->utils = new Utils();
+        $this->utils = new Utils;
     }
 
     public static function for(Context $context, ?string $moduleName = null): self
@@ -171,6 +171,13 @@ class Langfy
 
         return collect($toLanguages)
             ->mapWithKeys(function (string $toLanguage) use ($fromLanguage, $strings): array {
+                // Filter strings that are already translated for this specific language
+                $stringsForThisLanguage = $this->getUntranslatedStringsForLanguage($strings, $toLanguage);
+
+                if (blank($stringsForThisLanguage)) {
+                    return [$toLanguage => []];
+                }
+
                 $translator = AITranslator::configure()
                     ->from($fromLanguage)
                     ->to($toLanguage);
@@ -179,7 +186,7 @@ class Langfy
                     $translator->onProgress($this->translateProgressCallback);
                 }
 
-                $translations = $translator->run($strings);
+                $translations = $translator->run($stringsForThisLanguage);
 
                 if (filled($translations)) {
                     $this->saveTranslations($translations, $toLanguage);
@@ -187,6 +194,27 @@ class Langfy
 
                 return [$toLanguage => $translations];
             })->toArray();
+    }
+
+    /** Get untranslated strings for a specific target language. */
+    protected function getUntranslatedStringsForLanguage(array $strings, string $targetLanguage): array
+    {
+        $toFilePath = $this->getLanguageFilePath($targetLanguage);
+
+        // Get existing translations for this language
+        $existingTranslations = [];
+
+        if (file_exists($toFilePath)) {
+            $existingTranslations = rescue(
+                fn (): mixed => json_decode(file_get_contents($toFilePath), true),
+                []
+            ) ?? [];
+        }
+
+        // Return only strings that don't exist in the target language file
+        return collect($strings)
+            ->reject(fn ($value, $key): bool => array_key_exists($key, $existingTranslations))
+            ->toArray();
     }
 
     /** Get the language file path. */
@@ -255,28 +283,40 @@ class Langfy
 
         // If we have found strings and save is enabled, we want to translate those
         if ($this->enableSave && filled($this->foundStrings)) {
-            return $this->foundStrings;
+            return $this->filterUntranslatedStrings($this->foundStrings);
         }
 
-        // Otherwise, find strings that need translation using collections
-        return collect($this->getTargetLanguages())
-            ->flatMap(function (string $toLanguage) use ($fromStrings): array {
+        // Otherwise, find strings that need translation
+        return $this->filterUntranslatedStrings($fromStrings);
+    }
+
+    /** Filter strings that haven't been translated yet in any target language. */
+    protected function filterUntranslatedStrings(array $strings): array
+    {
+        $stringsNeedingTranslation = collect();
+
+        collect($this->getTargetLanguages())
+            ->each(function (string $toLanguage) use ($strings, &$stringsNeedingTranslation) {
                 $toFilePath = $this->getLanguageFilePath($toLanguage);
-                $fileExists = file_exists($toFilePath);
 
-                // If the to language file does not exist, all from strings are new
-                $toStrings = rescue(
-                    fn (): mixed => $fileExists ? json_decode(file_get_contents($toFilePath), true) : [],
-                    []
-                );
+                $existingTranslations = [];
 
-                return collect($fromStrings)
-                    ->reject(fn ($value, $key): bool => array_key_exists($key, $toStrings))
+                if (file_exists($toFilePath)) {
+                    $existingTranslations = rescue(
+                        fn (): mixed => json_decode(file_get_contents($toFilePath), true),
+                        []
+                    ) ?? [];
+                }
+
+                // Find strings that don't exist in this target language
+                $missingStrings = collect($strings)
+                    ->reject(fn ($value, $key): bool => array_key_exists($key, $existingTranslations))
                     ->toArray();
-            })
-            ->unique()
-            ->values()
-            ->toArray();
+
+                $stringsNeedingTranslation = $stringsNeedingTranslation->merge($missingStrings);
+            });
+
+        return $stringsNeedingTranslation->unique()->toArray();
     }
 
     /** Save translations to file. */
@@ -288,6 +328,6 @@ class Langfy
 
     public static function utils(): Utils
     {
-        return new Utils();
+        return new Utils;
     }
 }

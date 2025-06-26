@@ -9,8 +9,6 @@
 -   [Progress Callbacks](#progress-callbacks)
 -   [Usage Examples](#usage-examples)
 
-<a name="introduction"></a>
-
 ## Introduction
 
 The `Langfy\Langfy` class provides a fluent, convenient interface for finding and translating strings in Laravel applications and modules. It serves as the main entry point for all string discovery and AI-powered translation operations in the Langfy package.
@@ -56,8 +54,6 @@ $langfy = langfy(Context::Application);
 $moduleInstance = langfy(Context::Module, 'UserManagement');
 ```
 
-<a name="context-types"></a>
-
 ### Context Types
 
 Langfy supports two main contexts for operation:
@@ -75,56 +71,23 @@ Langfy supports two main contexts for operation:
 -   Scans the specific module's directory
 -   Saves language files to the module's `lang` directory
 
-<a name="available-methods"></a>
-
 ## Available Methods
 
 For the majority of the Langfy documentation, we'll discuss each method available on the `Langfy` class. Remember, all of these methods may be chained to fluently configure and execute your string finding and translation operations:
 
-<style>
-    .langfy-method-list > p {
-        columns: 10.8em 3; -moz-columns: 10.8em 3; -webkit-columns: 10.8em 3;
-    }
-
-    .langfy-method-list a {
-        display: block;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-</style>
-
-<div class="langfy-method-list" markdown="1">
-
-[for](#method-for)
-[finder](#method-finder)
-[save](#method-save)
-[translate](#method-translate)
-[onFinderProgress](#method-onFinder-progress)
-[onTranslateProgress](#method-onTranslate-progress)
-[getStrings](#method-getStrings)
-[perform](#method-perform)
-[utils](#method-utils)
-
-</div>
-
-<a name="configuration-methods"></a>
+- [for](#method-for)
+- [finder](#method-finder)
+- [save](#method-save)
+- [translate](#method-translate)
+- [onFinderProgress](#method-onFinder-progress)
+- [onTranslateProgress](#method-onTranslate-progress)
+- [getStrings](#method-getStrings)
+- [perform](#method-perform)
+- [utils](#method-utils)
 
 ## Configuration Methods
 
-<style>
-    .langfy-method code {
-        font-size: 14px;
-    }
-
-    .langfy-method:not(.first-langfy-method) {
-        margin-top: 50px;
-    }
-</style>
-
-<a name="method-for"></a>
-
-#### `for()` {.langfy-method .first-langfy-method}
+#### `for()`
 
 The static `for` method creates a new Langfy instance for the specified context. This is the primary way to instantiate the Langfy class:
 
@@ -144,9 +107,7 @@ The method accepts two parameters:
 -   `$context` (Context): The context type - either `Context::Application` or `Context::Module`
 -   `$moduleName` (string|null): Required when using `Context::Module`, ignored for `Context::Application`
 
-<a name="method-finder"></a>
-
-#### `finder()` {.langfy-method}
+#### `finder()`
 
 The `finder` method enables the string finding functionality. When enabled, Langfy will scan files for translatable strings using intelligent pattern matching:
 
@@ -165,9 +126,7 @@ The finder scans for strings in various formats:
 -   `@lang('string')` Blade directives
 -   `$this->lang` property access patterns
 
-<a name="method-save"></a>
-
-#### `save()` {.langfy-method}
+#### `save()`
 
 The `save` method enables automatic saving of found strings to language files. Found strings are saved as JSON files in the appropriate language directory:
 
@@ -186,9 +145,7 @@ $langfy = Langfy::for(Context::Module, 'Blog')
 -   **Application context**: `lang/{language}.json` (e.g., `lang/en.json`)
 -   **Module context**: `Modules/{ModuleName}/lang/{language}.json`
 
-<a name="method-translate"></a>
-
-#### `translate()` {.langfy-method}
+#### `translate()`
 
 The `translate` method enables AI-powered translation of found strings. It can translate to one or multiple target languages:
 
@@ -225,13 +182,9 @@ The translation uses AI providers configured in your `langfy.ai` configuration a
 -   Retry logic with exponential backoff
 -   Progress tracking and callbacks
 
-<a name="progress-callbacks"></a>
-
 ## Progress Callbacks
 
-<a name="method-onFinder-progress"></a>
-
-#### `onFinderProgress()` {.langfy-method}
+#### `onFinderProgress()`
 
 The `onFinderProgress` method allows you to register a callback that will be called during the string finding process, providing real-time progress updates:
 
@@ -251,9 +204,7 @@ $langfy = Langfy::for(Context::Module, 'Blog')
 -   `$total` (int): Total number of items to process
 -   `$extraData` (array): Additional data, typically contains `['file' => 'current_file_path']`
 
-<a name="method-onTranslate-progress"></a>
-
-#### `onTranslateProgress()` {.langfy-method}
+#### `onTranslateProgress()`
 
 The `onTranslateProgress` method allows you to register a callback for translation progress updates:
 
@@ -276,13 +227,9 @@ $langfy = Langfy::for(Context::Application)
 -   `$total` (int): Total number of chunks to translate
 -   `$extraData` (array): Contains `['language' => 'target_language']`
 
-<a name="execution-methods"></a>
-
 ## Execution Methods
 
-<a name="method-getStrings"></a>
-
-#### `getStrings()` {.langfy-method}
+#### `getStrings()`
 
 The `getStrings` method performs string finding and returns the discovered strings without saving or translating them. This is useful for inspection or custom processing:
 
@@ -301,9 +248,7 @@ $strings = $langfy->getStrings();
 > [!NOTE]
 > If the finder is not explicitly enabled, `getStrings()` will automatically enable it before execution.
 
-<a name="method-perform"></a>
-
-#### `perform()` {.langfy-method}
+#### `perform()`
 
 The `perform` method executes all configured operations and returns a comprehensive result array:
 
@@ -332,26 +277,6 @@ $result = Langfy::for(Context::Application)
 -   `translations` (array): Translation results keyed by language (if translate enabled)
 
 <a name="method-utils"></a>
-
-#### `utils()` {.langfy-method}
-
-The static `utils` method returns a Utils instance for accessing utility functions:
-
-```php
-$utils = Langfy::utils();
-
-// Check if Laravel Modules is enabled
-$modulesEnabled = $utils->laravelModulesEnabled();
-
-// Get available modules
-$modules = $utils->availableModules();
-
-// Get module path
-$path = $utils->modulePath('UserManagement');
-
-// Get default application paths
-$paths = $utils->getDefaultApplicationPaths();
-```
 
 <a name="usage-examples"></a>
 
@@ -431,9 +356,10 @@ $langfy = Langfy::for(Context::Application)
     ->finder()
     ->save();
 
-// Only translate if we have target languages configured
-$targetLanguages = config('langfy.to_language', []);
-if (!empty($targetLanguages)) {
+// Conditionally translate based on configuration
+$shouldTranslate = config('myapp.shouldTranslate', true);
+
+if ($shouldTranslate) {
     $langfy->translate();
 }
 
@@ -460,42 +386,6 @@ foreach ($modules as $module) {
 }
 
 echo "Total strings found: {$totalStrings}\n";
-```
-
-### Custom Progress Handling
-
-Implement sophisticated progress tracking:
-
-```php
-class ProgressTracker
-{
-    private int $totalFiles = 0;
-    private int $processedFiles = 0;
-
-    public function handleFinderProgress(int $current, int $total, array $extraData): void
-    {
-        $this->totalFiles = $total;
-        $this->processedFiles = $current;
-
-        $percentage = round(($current / $total) * 100, 1);
-        $fileName = basename($extraData['file'] ?? 'unknown');
-
-        echo "\033[2K\r"; // Clear line
-        echo "Processing {$fileName}: {$percentage}% ({$current}/{$total})";
-
-        if ($current === $total) {
-            echo "\nFinished processing {$total} files!\n";
-        }
-    }
-}
-
-$tracker = new ProgressTracker();
-
-$result = Langfy::for(Context::Application)
-    ->finder()
-    ->save()
-    ->onFinderProgress([$tracker, 'handleFinderProgress'])
-    ->perform();
 ```
 
 > [!NOTE]
