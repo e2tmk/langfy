@@ -15,5 +15,7 @@ arch('Console Commands should extend Command class')
 arch('Finder Patterns should extend Langfy\Pattern')
     ->expect('Langfy\Finder\Patterns')
     ->toBeClasses()
+    ->ignoring('Pattern')
     ->toExtend('Langfy\Pattern')
+    ->toHaveMethod('getPatterns')
     ->toOnlyBeUsedIn('Langfy\Service\Finder');

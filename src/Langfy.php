@@ -6,6 +6,7 @@ namespace Langfy;
 
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Support\Facades\File;
+use Langfy\Services\AITranslator;
 use Nwidart\Modules\Facades\Module;
 
 class Langfy
@@ -36,7 +37,9 @@ class Langfy
 
     public static function laravelModulesEnabled(): bool
     {
-        return class_exists('Nwidart\Modules\Facades\Module');
+        $modulesDir = config('modules.paths.modules');
+
+        return filled($modulesDir) && File::isDirectory($modulesDir);
     }
 
     public static function availableModules(): array
@@ -45,7 +48,7 @@ class Langfy
             return [];
         }
 
-        return collect(Module::all())->map(fn ($module) => $module->getName())->toArray();
+        return collect(Module::getOrdered())->map(fn ($module) => $module->getName())->toArray();
     }
 
     public static function modulePath(string $moduleName): ?string
@@ -70,5 +73,19 @@ class Langfy
         return collect($strings)
             ->mapWithKeys(fn ($string) => [$string => $string])
             ->toArray();
+    }
+
+    /** Run translator with configured options */
+    public static function quickTranslate(array $strings): array
+    {
+        $translatedStrings = collect();
+
+        collect(config()->array('langfy.to_languages', []))
+            ->each(function (string $language) use ($strings, &$translatedStrings): void {
+                $result = AITranslator::configure()->to($language)->run($strings);
+                $translatedStrings->put($language, $result);
+            });
+
+        return $translatedStrings->toArray();
     }
 }

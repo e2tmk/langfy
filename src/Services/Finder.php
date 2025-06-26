@@ -5,7 +5,6 @@ declare(strict_types = 1);
 namespace Langfy\Services;
 
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 use Langfy\FinderPatterns\FunctionPattern;
 use Langfy\FinderPatterns\PropertyPattern;
 use Langfy\FinderPatterns\VariablePattern;
@@ -151,8 +150,12 @@ class Finder
             }
 
             foreach ($matches[1] as $match) {
-                // Skip strings that appear to be keys rather than actual text
-                if (Str::contains($match, '.') && ! Str::contains($match, ' ')) {
+                // Skip empty strings or obvious non-translatable values
+                if (strlen($match) < 2) {
+                    continue;
+                }
+
+                if ($this->shouldSkipString($match)) {
                     continue;
                 }
 
@@ -170,40 +173,16 @@ class Finder
 
     protected function findVariableStrings(string $content): array
     {
-        return $this->findTranslatableStringsWithPatterns($content, $this->variablePattern->getPatterns());
+        $patterns = $this->variablePattern->getPatterns();
+
+        return $this->getMatches($content, $patterns);
     }
 
     protected function findTranslatableStringsWithPatterns(string $content, array $patterns): array
     {
-        $strings           = [];
         $normalizedContent = $this->normalizeContentForPropertyParsing($content);
 
-        foreach ($patterns as $pattern) {
-            preg_match_all($pattern . 's', $normalizedContent, $matches, PREG_SET_ORDER);
-
-            if ($matches === []) {
-                continue;
-            }
-
-            foreach ($matches as $match) {
-                if (isset($match[1]) && filled($match[1])) {
-                    $string = $match[1];
-
-                    // Skip empty strings or obvious non-translatable values
-                    if (strlen($string) < 2) {
-                        continue;
-                    }
-
-                    if ($this->shouldSkipString($string)) {
-                        continue;
-                    }
-
-                    $strings[] = $string;
-                }
-            }
-        }
-
-        return array_unique($strings);
+        return $this->getMatches($normalizedContent, $patterns);
     }
 
     protected function normalizeContentForPropertyParsing(string $content): string
@@ -237,5 +216,37 @@ class Finder
         }
 
         return false;
+    }
+
+    protected function getMatches(string $content, array $patterns): array
+    {
+        $strings = [];
+
+        foreach ($patterns as $pattern) {
+            preg_match_all($pattern, $content, $matches, PREG_SET_ORDER);
+
+            if ($matches === []) {
+                continue;
+            }
+
+            foreach ($matches as $match) {
+                if (isset($match[1]) && filled($match[1])) {
+                    $string = $match[1];
+
+                    // Skip empty strings or obvious non-translatable values
+                    if (strlen($string) < 2) {
+                        continue;
+                    }
+
+                    if ($this->shouldSkipString($string)) {
+                        continue;
+                    }
+
+                    $strings[] = $string;
+                }
+            }
+        }
+
+        return array_unique($strings);
     }
 }

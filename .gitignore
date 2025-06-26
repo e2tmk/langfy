@@ -29,3 +29,4 @@ phpstan.neon
 testbench.yaml
 /coverage
 /notes
+/debug

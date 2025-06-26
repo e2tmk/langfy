@@ -191,7 +191,6 @@ describe('File System Integration', function (): void {
     });
 
     it('processes complex mixed content', function (): void {
-        // Create a complex file with multiple pattern types
         $complexContent = '<?php
                 namespace App\Controllers;
 
@@ -235,7 +234,6 @@ describe('File System Integration', function (): void {
     });
 
     it('filters out non-translatable strings', function (): void {
-        // Create file with strings that should be filtered out
         $content = '<?php
                 echo __("Valid translatable string");
                 echo __("123");  // Pure number
