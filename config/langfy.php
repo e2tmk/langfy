@@ -64,6 +64,13 @@ return [
             'txt',
             'log',
         ],
+
+        'application_paths' => [
+            base_path('app'),
+            base_path('resources'),
+            base_path('routes'),
+            base_path('database'),
+        ],
     ],
 
     /*

@@ -37,7 +37,8 @@ class AITranslator
         protected float $temperature,
         #[Config('langfy.ai.provider')]
         protected Provider | string $modelProvider,
-    ) {}
+    ) {
+    }
 
     public static function configure(): AITranslator
     {
@@ -92,7 +93,7 @@ class AITranslator
             return [];
         }
 
-        $this->strings = Langfy::normalizeStringsArray($strings);
+        $this->strings = Langfy::utils()->normalizeStringsArray($strings);
 
         $translations    = collect();
         $chunks          = collect($this->strings)->chunk($this->chunkSize);

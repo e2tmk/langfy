@@ -42,7 +42,7 @@ class FinderCommand extends Command
     {
         $hasAppOption     = $this->option('app');
         $hasModulesOption = filled($this->option('modules'));
-        $modulesEnabled   = Langfy::laravelModulesEnabled();
+        $modulesEnabled   = Langfy::utils()->laravelModulesEnabled();
 
         // Case 1: --app specified
         if ($hasAppOption) {
@@ -157,7 +157,7 @@ class FinderCommand extends Command
 
     protected function processModulesWithSelection(): void
     {
-        if (! Langfy::laravelModulesEnabled()) {
+        if (! Langfy::utils()->laravelModulesEnabled()) {
             $this->error('Modules are not enabled in this application.');
 
             return;
@@ -207,7 +207,7 @@ class FinderCommand extends Command
                 }
 
                 if ($moduleName === 'All') {
-                    collect(Langfy::availableModules())
+                    collect(Langfy::utils()->availableModules())
                         ->each(fn ($name) => $this->processModule($name));
 
                     $skipAll = true;
@@ -223,7 +223,7 @@ class FinderCommand extends Command
     {
         $this->info("Starting in \"{$moduleName} Module\"");
 
-        $modulePath = Langfy::modulePath($moduleName);
+        $modulePath = Langfy::utils()->modulePath($moduleName);
 
         if (blank($modulePath) || ! is_dir($modulePath)) {
             $this->error("Module '{$moduleName}' not found.");
@@ -254,7 +254,7 @@ class FinderCommand extends Command
         $langPath = filled($basePath) ? $basePath . '/lang' : lang_path();
         $filePath = $langPath . '/' . $fromLanguage . '.json';
 
-        Langfy::saveStringsToFile($strings, $filePath);
+        Langfy::utils()->saveStringsToFile($strings, $filePath);
 
         $this->info("Saved {$context} strings to {$filePath}");
     }

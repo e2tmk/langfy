@@ -2,14 +2,15 @@
 
 declare(strict_types = 1);
 
-use Langfy\Services\Finder;
+use Langfy\Enums\Context;
+use Langfy\Langfy;
 
-if (! function_exists('langfy_finder')) {
+if (! function_exists('langfy')) {
     /**
-     * Create a new Finder instance with the specified paths.
+     * Create a new Langfy instance for the specified context.
      */
-    function langfy_finder(string | array $paths): Finder
+    function langfy(Context $context, ?string $moduleName = null): Langfy
     {
-        return Finder::in($paths);
+        return Langfy::for($context, $moduleName);
     }
 }

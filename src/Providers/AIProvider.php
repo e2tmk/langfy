@@ -85,7 +85,7 @@ class AIProvider
             properties: array_map(
                 fn ($key): StringSchema => new StringSchema(
                     $key,
-                    "Translation for '" . addslashes($strings[$key]) . "' in {$this->toLanguage} language"
+                    "Translation for '" . addslashes((string) $strings[$key]) . "' in {$this->toLanguage} language"
                 ),
                 array_keys($strings)
             ),

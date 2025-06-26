@@ -4,75 +4,261 @@ declare(strict_types = 1);
 
 namespace Langfy;
 
-use Illuminate\Contracts\Filesystem\FileNotFoundException;
-use Illuminate\Support\Facades\File;
-use Nwidart\Modules\Facades\Module;
+use Langfy\Enums\Context;
+use Langfy\Helpers\Utils;
+use Langfy\Services\AITranslator;
+use Langfy\Services\Finder;
 
 class Langfy
 {
-    /**
-     * Save an array of strings to a JSON file.
-     *
-     * @param  array<string> | array<string, string>  $strings  The strings to save.
-     * @param  string  $filePath  The path to the JSON file where the strings will be saved.
-     *
-     * @throws FileNotFoundException
-     */
-    public static function saveStringsToFile(array $strings, string $filePath): void
-    {
-        // Ensure the directory and file exist
-        File::ensureDirectoryExists(dirname($filePath));
+    protected bool $enableFinder = false;
 
-        if (! File::exists($filePath)) {
-            File::put($filePath, '');
+    protected bool $enableSave = false;
+
+    protected bool $enableTranslate = false;
+
+    protected string | array | null $translateTo = null;
+
+    protected array $foundStrings = [];
+
+    protected array $paths = [];
+
+    protected Utils $utils;
+
+    protected function __construct(protected Context $context, protected ?string $moduleName = null)
+    {
+        $this->setupDefaultPaths();
+        $this->utils = new Utils();
+    }
+
+    public static function for(Context $context, ?string $moduleName): self
+    {
+        return new self($context, $moduleName);
+    }
+
+    /** Enable finder functionality. */
+    public function finder(bool $enabled = true): self
+    {
+        $this->enableFinder = $enabled;
+
+        return $this;
+    }
+
+    /** Enable finder save functionality. */
+    public function save(bool $enabled = true): self
+    {
+        $this->enableSave = $enabled;
+
+        return $this;
+    }
+
+    /** Enable translate functionality. */
+    public function translate(bool $enabled = true, string | array | null $to = null): self
+    {
+        $this->enableTranslate = $enabled;
+
+        if (filled($to)) {
+            $this->translateTo = $to;
         }
 
-        $normalizedStrings = self::normalizeStringsArray($strings);
-
-        $mergedTranslations = collect(json_decode(File::get($filePath), true) ?? [])
-            ->merge($normalizedStrings)
-            ->toArray();
-
-        File::put($filePath, json_encode($mergedTranslations, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        return $this;
     }
 
-    public static function laravelModulesEnabled(): bool
+    /** Get found strings without performing other operations. */
+    public function getStrings(): array
     {
-        $modulesDir = config('modules.paths.modules');
+        if (! $this->enableFinder) {
+            $this->finder(true);
+        }
 
-        return filled($modulesDir) && File::isDirectory($modulesDir);
+        $this->runFinder();
+
+        return $this->getNewStrings();
     }
 
-    public static function availableModules(): array
+    /** Perform all configured operations. */
+    public function perform(): array
     {
-        if (! self::laravelModulesEnabled()) {
+        $results = [];
+
+        if ($this->enableFinder) {
+            $this->runFinder();
+            $results['found_strings'] = count($this->foundStrings);
+        }
+
+        if ($this->enableSave && filled($this->foundStrings)) {
+            $this->runSave();
+            $results['saved'] = true;
+        }
+
+        if ($this->enableTranslate) {
+            $stringsToTranslate = $this->getStringsForTranslation();
+
+            if (filled($stringsToTranslate)) {
+                $translations            = $this->runTranslate($stringsToTranslate);
+                $results['translations'] = $translations;
+            }
+        }
+
+        return $results;
+    }
+
+    /** Set up default paths based on context. */
+    protected function setupDefaultPaths(): void
+    {
+        if ($this->context === Context::Application) {
+            $this->paths = config()->array('langfy.finder.application_paths', $this->utils->getDefaultApplicationPaths());
+
+            return;
+        }
+
+        $this->paths = [$this->utils->modulePath($this->moduleName)];
+    }
+
+    /** Run finder */
+    protected function runFinder(): void
+    {
+        if (blank($this->paths)) {
+            return;
+        }
+
+        $this->foundStrings = Finder::in($this->paths)
+            ->ignore(['vendor', 'node_modules', 'storage', 'lang'])
+            ->run();
+    }
+
+    /** Run save finder operation. */
+    protected function runSave(): void
+    {
+        $filePath = $this->getLanguageFilePath();
+        $this->utils->saveStringsToFile($this->foundStrings, $filePath);
+    }
+
+    /** Run the translation operation. */
+    protected function runTranslate(array $strings): array
+    {
+        if (blank($strings)) {
             return [];
         }
 
-        return collect(Module::getOrdered())->map(fn ($module) => $module->getName())->toArray();
+        $fromLanguage = config('langfy.from_language', 'en');
+        $toLanguages  = $this->getTargetLanguages();
+
+        return collect($toLanguages)
+            ->mapWithKeys(function (string $toLanguage) use ($fromLanguage, $strings): array {
+                $translator = AITranslator::configure()
+                    ->from($fromLanguage)
+                    ->to($toLanguage);
+
+                $translations = $translator->run($strings);
+
+                if (filled($translations)) {
+                    $this->saveTranslations($translations, $toLanguage);
+                }
+
+                return [$toLanguage => $translations];
+            })->toArray();
     }
 
-    public static function modulePath(string $moduleName): ?string
+    /** Get the language file path. */
+    protected function getLanguageFilePath(?string $language = null): string
     {
-        if (! self::laravelModulesEnabled()) {
-            return null;
+        $language ??= config('langfy.from_language', 'en');
+
+        if ($this->context === Context::Application) {
+            return lang_path() . '/' . $language . '.json';
         }
 
-        $module = Module::find($moduleName);
+        if ($this->context === Context::Module && filled($this->moduleName)) {
+            $modulePath = $this->utils->modulePath($this->moduleName);
 
-        return optional($module)->getPath();
+            return $modulePath . '/lang/' . $language . '.json';
+        }
+
+        return lang_path() . '/' . $language . '.json';
     }
 
-    public static function normalizeStringsArray(array $strings): array
+    /** Get target languages for translation. */
+    protected function getTargetLanguages(): array
     {
-        // If all keys are strings, return as is
-        if (collect($strings)->keys()->every(fn ($key): bool => is_string($key))) {
-            return $strings;
+        if (filled($this->translateTo)) {
+            return is_array($this->translateTo) ? $this->translateTo : [$this->translateTo];
         }
 
-        // If keys are not strings, convert them to strings
-        return collect($strings)
-            ->mapWithKeys(fn ($string) => [$string => $string])
+        return config()->array('langfy.to_languages');
+    }
+
+    /** Get new strings that don't exist in the language file. */
+    protected function getNewStrings(): array
+    {
+        if (blank($this->foundStrings)) {
+            return [];
+        }
+
+        $filePath = $this->getLanguageFilePath();
+
+        if (! file_exists($filePath)) {
+            return $this->foundStrings;
+        }
+
+        $existingStrings = json_decode(file_get_contents($filePath), true) ?? [];
+
+        return collect($this->foundStrings)
+            ->reject(fn ($value, $key): bool => array_key_exists($key, $existingStrings))
             ->toArray();
+    }
+
+    /** Get strings for translation (existing in from language but missing in to language). */
+    protected function getStringsForTranslation(): array
+    {
+        $fromLanguage = config('langfy.from_language', 'en');
+        $fromFilePath = $this->getLanguageFilePath($fromLanguage);
+
+        if (! file_exists($fromFilePath)) {
+            return [];
+        }
+
+        $fromStrings = rescue(fn (): mixed => json_decode(file_get_contents($fromFilePath), true), []) ?? [];
+
+        if (blank($fromStrings)) {
+            return [];
+        }
+
+        // If we have found strings and save is enabled, we want to translate those
+        if ($this->enableSave && filled($this->foundStrings)) {
+            return $this->foundStrings;
+        }
+
+        // Otherwise, find strings that need translation using collections
+        return collect($this->getTargetLanguages())
+            ->flatMap(function (string $toLanguage) use ($fromStrings): array {
+                $toFilePath = $this->getLanguageFilePath($toLanguage);
+                $fileExists = file_exists($toFilePath);
+
+                // If the to language file does not exist, all from strings are new
+                $toStrings = rescue(
+                    fn (): mixed => $fileExists ? json_decode(file_get_contents($toFilePath), true) : [],
+                    []
+                );
+
+                return collect($fromStrings)
+                    ->reject(fn ($value, $key): bool => array_key_exists($key, $toStrings))
+                    ->toArray();
+            })
+            ->unique()
+            ->values()
+            ->toArray();
+    }
+
+    /** Save translations to file. */
+    protected function saveTranslations(array $translations, string $language): void
+    {
+        $filePath = $this->getLanguageFilePath($language);
+        $this->utils->saveStringsToFile($translations, $filePath);
+    }
+
+    public static function utils(): Utils
+    {
+        return new Utils();
     }
 }
