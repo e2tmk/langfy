@@ -41,7 +41,7 @@ features:
 
 <div class="home-footer">
   <div class="footer-text">
-    Open Source Package By E2TMK
+    Open Source Package By <a href="https://e2tmk.com" target="_blank" rel="noopener noreferrer">E2TMK</a>
   </div>
   
   <div class="footer-divider"></div>
