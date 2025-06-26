@@ -20,13 +20,9 @@ class FinderCommand extends Command
 
     protected $description = 'Find translation strings in application or modules and update language files';
 
-    protected array $moduleStats = [];
+    protected array $results = [];
 
     protected int $totalStringsFound = 0;
-
-    protected array $modulesToTranslate = [];
-
-    protected array $appTranslations = [];
 
     public function handle(): int
     {
@@ -43,60 +39,160 @@ class FinderCommand extends Command
         $hasModulesOption = filled($this->option('modules'));
         $modulesEnabled   = Langfy::utils()->laravelModulesEnabled();
 
-        // Case 1: --app specified
-        if ($hasAppOption) {
+        // Process the app only if the option is set or if modules are not enabled
+        if ($hasAppOption || (! $hasModulesOption && $this->shouldProcessApp())) {
             $this->processApplication();
-
-            if ($modulesEnabled && $this->confirm('Do you want to process modules as well?', false)) {
-                $this->processModulesWithSelection();
-            }
-
-            return;
         }
 
-        // Case 2: --modules specified
+        // Process modules if the option is set or if modules are enabled
         if ($hasModulesOption) {
             $this->processSpecificModules($this->option('modules'));
-
-            if ($this->confirm('Do you want to process the application as well?', false)) {
-                $this->processApplication();
-            }
-
-            return;
-        }
-
-        // Case 3: No options specified, prompt user
-        $processApp     = $this->confirm('Do you want to process the main application?', true);
-        $processModules = false;
-
-        if ($modulesEnabled) {
-            $processModules = $this->confirm('Do you want to process modules?', false);
-        }
-
-        if ($processApp) {
-            $this->processApplication();
-        }
-
-        if ($processModules) {
+        } elseif ($modulesEnabled && $this->shouldProcessModules($hasAppOption)) {
             $this->processModulesWithSelection();
         }
 
-        if (! $processApp && ! $processModules) {
+        if (blank($this->results)) {
             $this->info('No processing selected. Exiting.');
         }
     }
 
-    private function processModules(): void
+    private function shouldProcessApp(): bool
     {
-        $modules = $this->option('modules');
+        return $this->confirm('Do you want to process the main application?', true);
+    }
 
-        if (filled($modules)) {
-            $this->processSpecificModules($modules);
+    private function shouldProcessModules(bool $hasAppOption): bool
+    {
+        $message = $hasAppOption
+            ? 'Do you want to process modules as well?'
+            : 'Do you want to process modules?';
 
+        return $this->confirm($message, false);
+    }
+
+    private function processApplication(): void
+    {
+        $result = $this->performLangfyOperation(Context::Application);
+        $this->updateResults('app', $result);
+    }
+
+    private function processSpecificModules(array $modules): void
+    {
+        foreach ($modules as $module) {
+            $this->processModule($module);
+        }
+
+        // Ask to process the application after processing specific modules
+        if ($this->confirm('Do you want to process the application as well?', false)) {
+            $this->processApplication();
+        }
+    }
+
+    private function processModulesWithSelection(): void
+    {
+        $modules = $this->getAvailableModules();
+
+        if (empty($modules)) {
             return;
         }
 
-        $this->processModulesWithSelection();
+        $selectedModules = $this->selectModules($modules);
+        $this->processSelectedModules($selectedModules);
+    }
+
+    private function getAvailableModules(): array
+    {
+        if (! Langfy::utils()->laravelModulesEnabled()) {
+            $this->error('Modules are not enabled in this application.');
+
+            return [];
+        }
+
+        $modules = Module::allEnabled();
+
+        if (blank($modules)) {
+            $this->info('No enabled modules found.');
+
+            return [];
+        }
+
+        return $modules;
+    }
+
+    private function selectModules(array $modules): array
+    {
+        $choices = ['None', 'All'];
+
+        foreach ($modules as $module) {
+            $choices[] = $module->getName();
+        }
+
+        return $this->choice(
+            'Which modules do you want to process? (Use comma to separate multiple)',
+            $choices,
+            0,
+            null,
+            true
+        );
+    }
+
+    private function processSelectedModules(array $selectedModules): void
+    {
+        foreach ($selectedModules as $moduleName) {
+            $moduleName = Str::title(trim($moduleName));
+
+            if ($moduleName === 'None') {
+                $this->info('No modules selected. Skipping module processing.');
+
+                return;
+            }
+
+            if ($moduleName === 'All') {
+                foreach (Langfy::utils()->availableModules() as $name) {
+                    $this->processModule($name);
+                }
+
+                return;
+            }
+
+            $this->processModule($moduleName);
+        }
+    }
+
+    private function processModule(string $moduleName): void
+    {
+        $this->info("Starting in \"{$moduleName} Module\"");
+
+        $result = $this->performLangfyOperation(Context::Module, $moduleName);
+        $this->updateResults($moduleName, $result);
+    }
+
+    private function performLangfyOperation(Context $context, ?string $moduleName = null): array
+    {
+        $langfy = $moduleName
+            ? Langfy::for($context, $moduleName)
+            : Langfy::for($context);
+
+        $langfy = $langfy->finder()->save();
+
+        $result      = $langfy->perform();
+        $stringCount = $result['found_strings'] ?? 0;
+
+        $area = $moduleName ?? 'main application';
+        $this->info("Found {$stringCount} translatable strings in {$area}");
+
+        return [
+            'count'   => $stringCount,
+            'strings' => $stringCount > 0 ? $langfy->getStrings() : [],
+            'context' => $context,
+            'module'  => $moduleName,
+        ];
+    }
+
+    private function updateResults(string $key, array $result): void
+    {
+        $this->results[$key] = $result;
+        $this->totalStringsFound += $result['count'];
     }
 
     private function handleTranslation(): void
@@ -105,191 +201,66 @@ class FinderCommand extends Command
             return;
         }
 
-        $shouldTranslate = $this->option('trans') || $this->shouldPromptForTranslation();
+        $shouldTranslate = $this->option('trans') ||
+            (! $this->option('no-trans') &&
+                $this->confirm('Do you want translate founded strings?', false));
 
         if (! $shouldTranslate) {
             return;
         }
 
-        $this->info('Translating found strings...');
-        $this->translateFoundStrings();
+        $this->performTranslations();
     }
 
-    private function shouldPromptForTranslation(): bool
-    {
-        return ! $this->option('no-trans') &&
-            $this->confirm('Do you want translate founded strings?', false);
-    }
-
-    protected function processApplication(): void
-    {
-        $this->info('Starting in the main application');
-
-        $langfy = Langfy::for(Context::Application)
-            ->finder()
-            ->save();
-
-        $result      = $langfy->perform();
-        $stringCount = $result['found_strings'] ?? 0;
-
-        $this->info("Found {$stringCount} translatable strings");
-        $this->totalStringsFound += $stringCount;
-        $this->moduleStats['app'] = $stringCount;
-
-        if ($stringCount > 0) {
-            $this->appTranslations = $langfy->getStrings();
-        }
-    }
-
-    protected function processSpecificModules(array $modules): void
-    {
-        foreach ($modules as $module) {
-            $this->processModule($module);
-        }
-    }
-
-    protected function processModulesWithSelection(): void
-    {
-        if (! Langfy::utils()->laravelModulesEnabled()) {
-            $this->error('Modules are not enabled in this application.');
-
-            return;
-        }
-
-        $modules = Module::allEnabled();
-
-        if (blank($modules)) {
-            $this->info('No enabled modules found.');
-
-            return;
-        }
-
-        $moduleChoices = [
-            'None',
-            'All',
-        ];
-
-        foreach ($modules as $module) {
-            $moduleChoices[] = $module->getName();
-        }
-
-        // 0 Represents the default choice, which is 'None', and 1 represents 'All'
-        $selectedModules = $this->choice(
-            'Which modules do you want to process? (Use comma to separate multiple)',
-            $moduleChoices,
-            0, // Default to the first option
-            null,
-            true
-        );
-
-        $skipAll = false;
-
-        collect($selectedModules)
-            ->each(function (string $moduleName) use (&$skipAll): void {
-                if ($skipAll) {
-                    return;
-                }
-
-                $moduleName = Str::of($moduleName)->trim()->lower()->title()->toString();
-
-                if ($moduleName === 'None') {
-                    $this->info('No modules selected. Skipping module processing.');
-                    $skipAll = true;
-
-                    return;
-                }
-
-                if ($moduleName === 'All') {
-                    collect(Langfy::utils()->availableModules())
-                        ->each(fn ($name) => $this->processModule($name));
-
-                    $skipAll = true;
-
-                    return;
-                }
-
-                $this->processModule($moduleName);
-            });
-    }
-
-    protected function processModule(string $moduleName): void
-    {
-        $this->info("Starting in \"{$moduleName} Module\"");
-
-        $langfy = Langfy::for(Context::Module, $moduleName)
-            ->finder()
-            ->save()
-            ->onFinderProgress(function (int $current, int $total, array $extraData = []) use ($moduleName): void {
-                $percentage = $total > 0 ? round(($current / $total) * 100, 1) : 0;
-                $this->info("Processing {$moduleName}: {$current}/{$total} ({$percentage}%) - {$extraData['file']}");
-            });
-
-        $result      = $langfy->perform();
-        $stringCount = $result['found_strings'] ?? 0;
-
-        $this->info("Found {$stringCount} translatable strings in {$moduleName}");
-        $this->totalStringsFound += $stringCount;
-        $this->moduleStats[$moduleName] = $stringCount;
-
-        if ($stringCount > 0) {
-            $this->modulesToTranslate[$moduleName] = $langfy->getStrings();
-        }
-    }
-
-    protected function translateFoundStrings(): void
+    private function performTranslations(): void
     {
         $toLanguages = collect(config()->array('langfy.to_language', []));
 
-        if (blank($toLanguages)) {
+        if ($toLanguages->isEmpty()) {
             $this->warn('No target languages configured in langfy.to_language');
 
             return;
         }
 
-        $this->info('Target languages: ' . implode(', ', $toLanguages->toArray()));
+        $this->info('Translating found strings...');
+        $this->info('Target languages: ' . $toLanguages->implode(', '));
 
-        // Translate application strings
-        if (filled($this->appTranslations)) {
-            $this->info('Translating application strings...');
-
-            $langfy = Langfy::for(Context::Application)
-                ->translate(to: $toLanguages->toArray())
-                ->onTranslateProgress(function (int $current, int $total, string $language): void {
-                    $percentage = $total > 0 ? round(($current / $total) * 100, 1) : 0;
-                    $this->info("Translating to {$language}: {$current}/{$total} ({$percentage}%)");
-                });
-
-            $langfy->perform();
-        }
-
-        // Translate module strings
-        foreach ($this->modulesToTranslate as $moduleName => $strings) {
-            if (blank($strings)) {
+        foreach ($this->results as $key => $result) {
+            if ($result['count'] === 0) {
                 continue;
             }
 
-            $this->info("Translating {$moduleName} module strings...");
-
-            $langfy = Langfy::for(Context::Module, $moduleName)
-                ->translate(to: $toLanguages->toArray())
-                ->onTranslateProgress(function (int $current, int $total, string $language) use ($moduleName): void {
-                    $percentage = $total > 0 ? round(($current / $total) * 100, 1) : 0;
-                    $this->info("Translating {$moduleName} to {$language}: {$current}/{$total} ({$percentage}%)");
-                });
-
-            $langfy->perform();
+            $this->translateResult($key, $result, $toLanguages->toArray());
         }
     }
 
-    protected function displaySummary(): void
+    private function translateResult(string $key, array $result, array $toLanguages): void
+    {
+        $area = $result['module'] ?? 'application';
+        $this->info("Translating {$area} strings...");
+
+        $langfy = $result['module']
+            ? Langfy::for($result['context'], $result['module'])
+            : Langfy::for($result['context']);
+
+        $langfy = $langfy->translate(to: $toLanguages)
+            ->onTranslateProgress(function (int $current, int $total, string $language) use ($area): void {
+                $percentage = $total > 0 ? round(($current / $total) * 100, 1) : 0;
+                $this->info("Translating {$area} to {$language}: {$current}/{$total} ({$percentage}%)");
+            });
+
+        $langfy->perform();
+    }
+
+    private function displaySummary(): void
     {
         $this->newLine(2);
         $this->info('Finish...');
         $this->info("{$this->totalStringsFound} strings found in total");
 
-        $updatedAreas = array_filter($this->moduleStats, fn ($count): bool => $count > 0);
+        $resultsWithStrings = array_filter($this->results, fn ($result) => $result['count'] > 0);
 
-        if ($updatedAreas === []) {
+        if (empty($resultsWithStrings)) {
             $this->info('No translatable strings were found.');
 
             return;
@@ -297,8 +268,9 @@ class FinderCommand extends Command
 
         $tableData = [];
 
-        foreach ($updatedAreas as $area => $stringCount) {
-            $tableData[] = [$area === 'app' ? 'Application' : $area, $stringCount];
+        foreach ($resultsWithStrings as $key => $result) {
+            $areaName    = $key === 'app' ? 'Application' : $key;
+            $tableData[] = [$areaName, $result['count']];
         }
 
         $this->table(['Area', 'Strings Found'], $tableData);
