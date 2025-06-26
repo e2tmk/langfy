@@ -22,9 +22,17 @@ export default defineConfig({
         sidebar: [
             {
                 text: "Getting Started",
-                items: [{ text: "Introduction", link: "/" }],
+                items: [
+                    { text: "Introduction", link: "/" },
+                    { text: "Finding Strings", link: "/finding-strings" },
+                ],
             },
             {
+                text: "Commands",
+                items: [{ text: "Finder Command", link: "/commands/finder" }],
+            },
+            {
+                collapsed: true,
                 text: "API Reference",
                 items: [{ text: "Langfy Class", link: "/api/langfy" }],
             },
