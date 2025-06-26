@@ -4,10 +4,10 @@ layout: home
 
 hero:
     name: "Langfy"
-    tagline: Powerful utility for finding and processing Eloquent model records with a fluent, chainable API
+    tagline: AI-powered translation package for Laravel applications with automatic string discovery and intelligent translation management
     image:
         src: /logo-purple.png
-        alt: Hunter logo
+        alt: Langfy logo
     actions:
         - theme: brand
           text: Introduction
@@ -15,28 +15,28 @@ hero:
 
 features:
     - icon: 🔍
-      title: Powerful Search
-      details: Find records with flexible criteria using an intuitive query builder interface.
+      title: Smart String Discovery
+      details: Automatically find translatable strings in your Laravel app, Blade templates, and modules using intelligent pattern matching.
+
+    - icon: 🤖
+      title: AI-Powered Translation
+      details: Translate strings using OpenAI and other AI providers with automatic chunking, retry logic, and error handling.
 
     - icon: 🔗
       title: Fluent API
-      details: Chainable methods for clean, readable code that's easy to understand and maintain.
+      details: Chainable methods for clean, readable code that's easy to understand and configure for your translation needs.
 
-    - icon: 🎯
-      title: Multiple Actions
-      details: Execute several actions per record with comprehensive flow control and error handling.
-
-    - icon: ⚡
-      title: Flow Control
-      details: Skip, fail, or stop processing gracefully with detailed feedback and logging.
+    - icon: 📦
+      title: Module Support
+      details: Full support for Laravel Modules (nwidart/laravel-modules) with individual module processing and management.
 
     - icon: 📊
-      title: Comprehensive Reporting
-      details: Detailed statistics and error tracking with complete processing summaries.
+      title: Progress Tracking
+      details: Real-time progress callbacks and comprehensive reporting with detailed statistics and processing summaries.
 
     - icon: 🛡️
-      title: Error Handling
-      details: Robust error handling with logging, recovery options, and graceful degradation.
+      title: Enterprise Ready
+      details: Robust error handling, retry mechanisms, and production-ready features with extensive configuration options.
 ---
 
 <div class="home-footer">
@@ -48,9 +48,9 @@ features:
   
   <img src="/logo-zinc.png"
     width="120" 
-    alt="Hunter logo" class="footer-logo langfy-logo-dark" />
+    alt="Langfy logo" class="footer-logo langfy-logo-dark" />
   
   <img src="/logo-purple.png"
     width="120" 
-    alt="Hunter logo" class="footer-logo langfy-logo-light" />
+    alt="Langfy logo" class="footer-logo langfy-logo-light" />
 </div>

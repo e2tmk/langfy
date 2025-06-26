@@ -4,7 +4,7 @@ import { defineConfig } from "vitepress";
 export default defineConfig({
     title: "Langfy",
     description:
-        "Powerful utility for finding and processing Eloquent model records with a fluent, chainable API.",
+        "AI-powered translation package for Laravel applications with automatic string discovery and intelligent translation management.",
 
     head: [["link", { rel: "icon", href: "/logo-purple.png" }]],
 
