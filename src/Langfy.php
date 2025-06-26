@@ -32,7 +32,7 @@ class Langfy
     protected function __construct(protected Context $context, protected ?string $moduleName = null)
     {
         $this->setupDefaultPaths();
-        $this->utils = new Utils;
+        $this->utils = new Utils();
     }
 
     public static function for(Context $context, ?string $moduleName = null): self
@@ -296,7 +296,7 @@ class Langfy
         $stringsNeedingTranslation = collect();
 
         collect($this->getTargetLanguages())
-            ->each(function (string $toLanguage) use ($strings, &$stringsNeedingTranslation) {
+            ->each(function (string $toLanguage) use ($strings, &$stringsNeedingTranslation): void {
                 $toFilePath = $this->getLanguageFilePath($toLanguage);
 
                 $existingTranslations = [];
@@ -328,6 +328,6 @@ class Langfy
 
     public static function utils(): Utils
     {
-        return new Utils;
+        return new Utils();
     }
 }

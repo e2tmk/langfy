@@ -29,7 +29,10 @@ export default defineConfig({
             },
             {
                 text: "Commands",
-                items: [{ text: "Finder Command", link: "/commands/finder" }],
+                items: [
+                    { text: "Finder", link: "/commands/finder" },
+                    { text: "Trans", link: "/commands/trans" },
+                ],
             },
             {
                 collapsed: true,
