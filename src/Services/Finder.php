@@ -5,6 +5,7 @@ declare(strict_types = 1);
 namespace Langfy\Services;
 
 use Illuminate\Support\Collection;
+use Langfy\Concerns\HasProgressCallbacks;
 use Langfy\FinderPatterns\FunctionPattern;
 use Langfy\FinderPatterns\PropertyPattern;
 use Langfy\FinderPatterns\VariablePattern;
@@ -12,6 +13,7 @@ use Symfony\Component\Finder\Finder as SymfonyFinder;
 
 class Finder
 {
+    use HasProgressCallbacks;
     protected Collection $paths;
 
     protected array $defaultIgnorePaths = [
@@ -99,7 +101,25 @@ class Finder
     public function run(): array
     {
         $results = [];
+        $totalFiles = 0;
+        $processedFiles = 0;
 
+        // First pass: count total files for progress tracking
+        foreach ($this->paths as $path) {
+            if (! is_dir($path)) {
+                continue;
+            }
+
+            $finder = (new SymfonyFinder())
+                ->files()
+                ->in($path)
+                ->notPath($this->defaultIgnorePaths)
+                ->name(['*.php', '*.blade.php']);
+
+            $totalFiles += iterator_count($finder);
+        }
+
+        // Second pass: process files with progress tracking
         foreach ($this->paths as $path) {
             if (! is_dir($path)) {
                 continue;
@@ -116,6 +136,12 @@ class Finder
                 $strings = $this->findStringsInContent($content, $file->getExtension());
 
                 $results = array_merge($results, $strings);
+
+                $processedFiles++;
+                $this->callProgressCallback($processedFiles, $totalFiles, extraData: [
+                    'file' => $file->getRelativePathname(),
+                    'path' => $path,
+                ]);
             }
         }
 

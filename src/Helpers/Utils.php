@@ -13,8 +13,8 @@ class Utils
     /**
      * Save an array of strings to a JSON file.
      *
-     * @param array<string> | array<string, string> $strings The strings to save.
-     * @param string $filePath The path to the JSON file where the strings will be saved.
+     * @param  array<string> | array<string, string>  $strings  The strings to save.
+     * @param  string  $filePath  The path to the JSON file where the strings will be saved.
      *
      * @throws FileNotFoundException
      */
@@ -85,5 +85,20 @@ class Utils
             base_path('config'),
             base_path('database'),
         ];
+    }
+
+    public static function __callStatic(string $method, array $args)
+    {
+        if (method_exists(self::class, $method)) {
+            return self::$method(...$args);
+        }
+
+        $instance = new self;
+
+        if (method_exists($instance, $method)) {
+            return $instance->$method(...$args);
+        }
+
+        throw new \BadMethodCallException("Method {$method} does not exist in " . self::class);
     }
 }

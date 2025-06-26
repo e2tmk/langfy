@@ -23,6 +23,10 @@ class Langfy
 
     protected array $paths = [];
 
+    protected ?\Closure $finderProgressCallback = null;
+
+    protected ?\Closure $translateProgressCallback = null;
+
     protected Utils $utils;
 
     protected function __construct(protected Context $context, protected ?string $moduleName = null)
@@ -31,10 +35,11 @@ class Langfy
         $this->utils = new Utils();
     }
 
-    public static function for(Context $context, ?string $moduleName): self
+    public static function for(Context $context, ?string $moduleName = null): self
     {
         return new self($context, $moduleName);
     }
+
 
     /** Enable finder functionality. */
     public function finder(bool $enabled = true): self
@@ -60,6 +65,22 @@ class Langfy
         if (filled($to)) {
             $this->translateTo = $to;
         }
+
+        return $this;
+    }
+
+    /** Set progress callback for finder operations. */
+    public function onFinderProgress(\Closure $callback): self
+    {
+        $this->finderProgressCallback = $callback;
+
+        return $this;
+    }
+
+    /** Set progress callback for translate operations. */
+    public function onTranslateProgress(\Closure $callback): self
+    {
+        $this->translateProgressCallback = $callback;
 
         return $this;
     }
@@ -107,12 +128,12 @@ class Langfy
     protected function setupDefaultPaths(): void
     {
         if ($this->context === Context::Application) {
-            $this->paths = config()->array('langfy.finder.application_paths', $this->utils->getDefaultApplicationPaths());
+            $this->paths = config()->array('langfy.finder.application_paths', self::utils()->getDefaultApplicationPaths());
 
             return;
         }
 
-        $this->paths = [$this->utils->modulePath($this->moduleName)];
+        $this->paths = [self::utils()->modulePath($this->moduleName)];
     }
 
     /** Run finder */
@@ -122,16 +143,21 @@ class Langfy
             return;
         }
 
-        $this->foundStrings = Finder::in($this->paths)
-            ->ignore(['vendor', 'node_modules', 'storage', 'lang'])
-            ->run();
+        $finder = Finder::in($this->paths)
+            ->ignore(['vendor', 'node_modules', 'storage', 'lang']);
+
+        if (filled($this->finderProgressCallback)) {
+            $finder->onProgress($this->finderProgressCallback);
+        }
+
+        $this->foundStrings = $finder->run();
     }
 
     /** Run save finder operation. */
     protected function runSave(): void
     {
         $filePath = $this->getLanguageFilePath();
-        $this->utils->saveStringsToFile($this->foundStrings, $filePath);
+        self::utils()->saveStringsToFile($this->foundStrings, $filePath);
     }
 
     /** Run the translation operation. */
@@ -149,6 +175,10 @@ class Langfy
                 $translator = AITranslator::configure()
                     ->from($fromLanguage)
                     ->to($toLanguage);
+
+                if (filled($this->translateProgressCallback)) {
+                    $translator->onProgress($this->translateProgressCallback);
+                }
 
                 $translations = $translator->run($strings);
 
@@ -170,7 +200,7 @@ class Langfy
         }
 
         if ($this->context === Context::Module && filled($this->moduleName)) {
-            $modulePath = $this->utils->modulePath($this->moduleName);
+            $modulePath = self::utils()->modulePath($this->moduleName);
 
             return $modulePath . '/lang/' . $language . '.json';
         }
@@ -254,7 +284,7 @@ class Langfy
     protected function saveTranslations(array $translations, string $language): void
     {
         $filePath = $this->getLanguageFilePath($language);
-        $this->utils->saveStringsToFile($translations, $filePath);
+        self::utils()->saveStringsToFile($translations, $filePath);
     }
 
     public static function utils(): Utils

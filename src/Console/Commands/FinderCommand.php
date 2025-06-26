@@ -6,9 +6,8 @@ namespace Langfy\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
+use Langfy\Enums\Context;
 use Langfy\Langfy;
-use Langfy\Services\AITranslator;
-use Langfy\Services\Finder;
 use Nwidart\Modules\Facades\Module;
 
 class FinderCommand extends Command
@@ -126,25 +125,19 @@ class FinderCommand extends Command
     {
         $this->info('Starting in the main application');
 
-        $paths = [
-            app_path(),
-            resource_path(),
-            database_path(),
-            base_path('routes'),
-        ];
+        $langfy = Langfy::for(Context::Application)
+            ->finder()
+            ->save();
 
-        $finder = Finder::in($paths);
-
-        $strings     = $finder->run();
-        $stringCount = count($strings);
+        $result      = $langfy->perform();
+        $stringCount = $result['found_strings'] ?? 0;
 
         $this->info("Found {$stringCount} translatable strings");
         $this->totalStringsFound += $stringCount;
         $this->moduleStats['app'] = $stringCount;
 
         if ($stringCount > 0) {
-            $this->saveStringsToFile($strings, 'app');
-            $this->appTranslations = $strings;
+            $this->appTranslations = $langfy->getStrings();
         }
     }
 
@@ -223,40 +216,24 @@ class FinderCommand extends Command
     {
         $this->info("Starting in \"{$moduleName} Module\"");
 
-        $modulePath = Langfy::utils()->modulePath($moduleName);
+        $langfy = Langfy::for(Context::Module, $moduleName)
+            ->finder()
+            ->save()
+            ->onFinderProgress(function (int $current, int $total, array $extraData = []) use ($moduleName): void {
+                $percentage = $total > 0 ? round(($current / $total) * 100, 1) : 0;
+                $this->info("Processing {$moduleName}: {$current}/{$total} ({$percentage}%) - {$extraData['file']}");
+            });
 
-        if (blank($modulePath) || ! is_dir($modulePath)) {
-            $this->error("Module '{$moduleName}' not found.");
-
-            return;
-        }
-
-        $finder = Finder::in($modulePath)
-            ->ignore(['vendor', 'node_modules', 'storage', 'lang']);
-
-        $strings     = $finder->run();
-        $stringCount = count($strings);
+        $result      = $langfy->perform();
+        $stringCount = $result['found_strings'] ?? 0;
 
         $this->info("Found {$stringCount} translatable strings in {$moduleName}");
         $this->totalStringsFound += $stringCount;
         $this->moduleStats[$moduleName] = $stringCount;
 
         if ($stringCount > 0) {
-            $this->saveStringsToFile($strings, $moduleName, $modulePath);
-            $this->modulesToTranslate[$moduleName] = $strings;
+            $this->modulesToTranslate[$moduleName] = $langfy->getStrings();
         }
-    }
-
-    protected function saveStringsToFile(array $strings, string $context, ?string $basePath = null): void
-    {
-        $fromLanguage = config('langfy.from_language', 'en');
-
-        $langPath = filled($basePath) ? $basePath . '/lang' : lang_path();
-        $filePath = $langPath . '/' . $fromLanguage . '.json';
-
-        Langfy::utils()->saveStringsToFile($strings, $filePath);
-
-        $this->info("Saved {$context} strings to {$filePath}");
     }
 
     protected function translateFoundStrings(): void
@@ -271,13 +248,37 @@ class FinderCommand extends Command
 
         $this->info('Target languages: ' . implode(', ', $toLanguages->toArray()));
 
-        $toLanguages->each(function (string $language): void {
-            $this->info("Translating to {$language}...");
+        // Translate application strings
+        if (filled($this->appTranslations)) {
+            $this->info('Translating application strings...');
 
-            $strings = AITranslator::quickTranslate($this->appTranslations, toLanguages: $language);
+            $langfy = Langfy::for(Context::Application)
+                ->translate(to: $toLanguages->toArray())
+                ->onTranslateProgress(function (int $current, int $total, string $language): void {
+                    $percentage = $total > 0 ? round(($current / $total) * 100, 1) : 0;
+                    $this->info("Translating to {$language}: {$current}/{$total} ({$percentage}%)");
+                });
 
-            $this->saveStringsToFile($strings, $language);
-        });
+            $langfy->perform();
+        }
+
+        // Translate module strings
+        foreach ($this->modulesToTranslate as $moduleName => $strings) {
+            if (blank($strings)) {
+                continue;
+            }
+
+            $this->info("Translating {$moduleName} module strings...");
+
+            $langfy = Langfy::for(Context::Module, $moduleName)
+                ->translate(to: $toLanguages->toArray())
+                ->onTranslateProgress(function (int $current, int $total, string $language) use ($moduleName): void {
+                    $percentage = $total > 0 ? round(($current / $total) * 100, 1) : 0;
+                    $this->info("Translating {$moduleName} to {$language}: {$current}/{$total} ({$percentage}%)");
+                });
+
+            $langfy->perform();
+        }
     }
 
     protected function displaySummary(): void
