@@ -93,7 +93,7 @@ class Utils
             return self::$method(...$args);
         }
 
-        $instance = new self;
+        $instance = new self();
 
         if (method_exists($instance, $method)) {
             return $instance->$method(...$args);

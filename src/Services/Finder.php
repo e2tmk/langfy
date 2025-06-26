@@ -14,6 +14,7 @@ use Symfony\Component\Finder\Finder as SymfonyFinder;
 class Finder
 {
     use HasProgressCallbacks;
+
     protected Collection $paths;
 
     protected array $defaultIgnorePaths = [
@@ -100,8 +101,8 @@ class Finder
      */
     public function run(): array
     {
-        $results = [];
-        $totalFiles = 0;
+        $results        = [];
+        $totalFiles     = 0;
         $processedFiles = 0;
 
         // First pass: count total files for progress tracking

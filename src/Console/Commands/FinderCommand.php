@@ -92,7 +92,7 @@ class FinderCommand extends Command
     {
         $modules = $this->getAvailableModules();
 
-        if (empty($modules)) {
+        if ($modules === []) {
             return;
         }
 
@@ -139,7 +139,7 @@ class FinderCommand extends Command
     private function processSelectedModules(array $selectedModules): void
     {
         foreach ($selectedModules as $moduleName) {
-            $moduleName = Str::title(trim($moduleName));
+            $moduleName = Str::title(trim((string) $moduleName));
 
             if ($moduleName === 'None') {
                 $this->info('No modules selected. Skipping module processing.');
@@ -169,7 +169,7 @@ class FinderCommand extends Command
 
     private function performLangfyOperation(Context $context, ?string $moduleName = null): array
     {
-        $langfy = $moduleName
+        $langfy = $moduleName !== null && $moduleName !== '' && $moduleName !== '0'
             ? Langfy::for($context, $moduleName)
             : Langfy::for($context);
 
@@ -209,10 +209,88 @@ class FinderCommand extends Command
             return;
         }
 
-        $this->performTranslations();
+        // Get areas to translate with selection
+        $areasToTranslate = $this->selectAreasForTranslation();
+
+        if ($areasToTranslate === []) {
+            $this->info('No areas selected for translation.');
+
+            return;
+        }
+
+        $this->performTranslations($areasToTranslate);
     }
 
-    private function performTranslations(): void
+    private function selectAreasForTranslation(): array
+    {
+        $resultsWithStrings = array_filter($this->results, fn ($result): bool => $result['count'] > 0);
+
+        if ($resultsWithStrings === []) {
+            return [];
+        }
+
+        // If only one area has strings, auto-select it
+        if (count($resultsWithStrings) === 1) {
+            return array_keys($resultsWithStrings);
+        }
+
+        $choices = ['None', 'All'];
+
+        foreach ($resultsWithStrings as $key => $result) {
+            $areaName    = $key === 'app' ? 'Application' : $key;
+            $stringCount = $result['count'];
+            $choices[]   = "{$areaName} ({$stringCount} strings)";
+        }
+
+        $selectedChoices = $this->choice(
+            'Which areas do you want to translate? (Use comma to separate multiple)',
+            $choices,
+            0,
+            null,
+            true
+        );
+
+        return $this->processTranslationSelection($selectedChoices, $resultsWithStrings);
+    }
+
+    private function processTranslationSelection(array $selectedChoices, array $resultsWithStrings): array
+    {
+        $areasToTranslate = [];
+
+        foreach ($selectedChoices as $choice) {
+            $choice = trim((string) $choice);
+
+            if ($choice === 'None') {
+                return [];
+            }
+
+            if ($choice === 'All') {
+                return array_keys($resultsWithStrings);
+            }
+
+            // Extract area name from choice (remove string count part)
+            if (preg_match('/^(.+?)\s*\(\d+\s+strings\)$/', $choice, $matches)) {
+                $areaName = trim($matches[1]);
+
+                if ($areaName === 'Application') {
+                    $areasToTranslate[] = 'app';
+                } else {
+                    // Find the corresponding key in results
+                    foreach (array_keys($resultsWithStrings) as $key) {
+                        if ($key === $areaName || ($key === 'app' && $areaName === 'Application')) {
+                            $areasToTranslate[] = $key;
+
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return array_unique($areasToTranslate);
+    }
+
+    private function performTranslations(array $areasToTranslate = []): void
     {
         $toLanguages = collect(config()->array('langfy.to_language', []));
 
@@ -230,11 +308,16 @@ class FinderCommand extends Command
                 continue;
             }
 
-            $this->translateResult($key, $result, $toLanguages->toArray());
+            // Skip if this area is not selected for translation
+            if ($areasToTranslate !== [] && ! in_array($key, $areasToTranslate)) {
+                continue;
+            }
+
+            $this->translateResult($result, $toLanguages->toArray());
         }
     }
 
-    private function translateResult(string $key, array $result, array $toLanguages): void
+    private function translateResult(array $result, array $toLanguages): void
     {
         $area = $result['module'] ?? 'application';
         $this->info("Translating {$area} strings...");
@@ -258,9 +341,9 @@ class FinderCommand extends Command
         $this->info('Finish...');
         $this->info("{$this->totalStringsFound} strings found in total");
 
-        $resultsWithStrings = array_filter($this->results, fn ($result) => $result['count'] > 0);
+        $resultsWithStrings = array_filter($this->results, fn ($result): bool => $result['count'] > 0);
 
-        if (empty($resultsWithStrings)) {
+        if ($resultsWithStrings === []) {
             $this->info('No translatable strings were found.');
 
             return;

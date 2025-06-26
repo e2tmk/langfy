@@ -40,7 +40,6 @@ class Langfy
         return new self($context, $moduleName);
     }
 
-
     /** Enable finder functionality. */
     public function finder(bool $enabled = true): self
     {
