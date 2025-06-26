@@ -13,7 +13,7 @@ class Langfy
     /**
      * Save an array of strings to a JSON file.
      *
-     * @param  array<string>  $strings  The strings to save.
+     * @param  array<string> | array<string, string>  $strings  The strings to save.
      * @param  string  $filePath  The path to the JSON file where the strings will be saved.
      *
      * @throws FileNotFoundException
@@ -27,8 +27,10 @@ class Langfy
             File::put($filePath, '');
         }
 
+        $normalizedStrings = self::normalizeStringsArray($strings);
+
         $mergedTranslations = collect(json_decode(File::get($filePath), true) ?? [])
-            ->merge(collect($strings)->mapWithKeys(fn ($string) => [$string => $string]))
+            ->merge($normalizedStrings)
             ->toArray();
 
         File::put($filePath, json_encode($mergedTranslations, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));

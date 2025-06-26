@@ -7,12 +7,15 @@ namespace Langfy\Services;
 use Illuminate\Container\Attributes\Config;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Langfy\Concerns\HasProgressCallbacks;
 use Langfy\Langfy;
 use Langfy\Providers\AIProvider;
 use Prism\Prism\Enums\Provider;
 
 class AITranslator
 {
+    use HasProgressCallbacks;
+
     protected int $chunkSize = 15;
 
     protected int $maxRetries = 3;
@@ -34,8 +37,7 @@ class AITranslator
         protected float $temperature,
         #[Config('langfy.ai.provider')]
         protected Provider | string $modelProvider,
-    ) {
-    }
+    ) {}
 
     public static function configure(): AITranslator
     {
@@ -92,14 +94,20 @@ class AITranslator
 
         $this->strings = Langfy::normalizeStringsArray($strings);
 
-        $translations = collect();
+        $translations    = collect();
+        $chunks          = collect($this->strings)->chunk($this->chunkSize);
+        $totalChunks     = $chunks->count();
+        $processedChunks = 0;
 
-        collect($this->strings)
-            ->chunk($this->chunkSize)
-            ->each(function (Collection $chunk) use (&$translations): void {
-                $chunkTranslations = $this->translateChunk($chunk);
-                $translations      = $translations->merge($chunkTranslations);
-            });
+        $chunks->each(function (Collection $chunk) use (&$translations, &$processedChunks, $totalChunks): void {
+            $chunkTranslations = $this->translateChunk($chunk);
+            $translations      = $translations->merge($chunkTranslations);
+
+            $processedChunks++;
+            $this->callProgressCallback($processedChunks, $totalChunks, extraData: [
+                'language' => $this->toLanguage,
+            ]);
+        });
 
         return $this->ensureAllStringsTranslated($translations->toArray());
     }

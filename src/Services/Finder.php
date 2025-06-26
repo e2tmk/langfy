@@ -42,14 +42,14 @@ class Finder
         $this->paths              = collect([]);
         $this->defaultIgnorePaths = array_merge($this->defaultIgnorePaths, config('langfy.finder.ignore_paths', []));
 
-        $this->functionPattern = new FunctionPattern();
-        $this->propertyPattern = new PropertyPattern();
-        $this->variablePattern = new VariablePattern();
+        $this->functionPattern = new FunctionPattern;
+        $this->propertyPattern = new PropertyPattern;
+        $this->variablePattern = new VariablePattern;
     }
 
     public static function in(string | array $paths): self
     {
-        $instance = new self();
+        $instance = new self;
 
         if (is_string($paths)) {
             $paths = [$paths];
@@ -105,7 +105,7 @@ class Finder
                 continue;
             }
 
-            $finder = (new SymfonyFinder())
+            $finder = (new SymfonyFinder)
                 ->files()
                 ->in($path)
                 ->notPath($this->defaultIgnorePaths)
