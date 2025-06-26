@@ -56,7 +56,7 @@ class FinderCommand extends Command
 
     protected function updateResults(string $key, array $result): void
     {
-        parent::updateResults($key, $result);
+        $this->results[$key] = $result;
         $this->totalStringsFound += $result['count'];
     }
 
