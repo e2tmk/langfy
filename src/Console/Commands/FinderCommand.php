@@ -92,7 +92,7 @@ class FinderCommand extends Command
     {
         $modules = $this->getAvailableModules();
 
-        if ($modules === []) {
+        if (blank($modules)) {
             return;
         }
 
@@ -212,7 +212,7 @@ class FinderCommand extends Command
         // Get areas to translate with selection
         $areasToTranslate = $this->selectAreasForTranslation();
 
-        if ($areasToTranslate === []) {
+        if (blank($areasToTranslate)) {
             $this->info('No areas selected for translation.');
 
             return;
@@ -225,7 +225,7 @@ class FinderCommand extends Command
     {
         $resultsWithStrings = array_filter($this->results, fn ($result): bool => $result['count'] > 0);
 
-        if ($resultsWithStrings === []) {
+        if (blank($resultsWithStrings)) {
             return [];
         }
 
@@ -343,7 +343,7 @@ class FinderCommand extends Command
 
         $resultsWithStrings = array_filter($this->results, fn ($result): bool => $result['count'] > 0);
 
-        if ($resultsWithStrings === []) {
+        if (blank($resultsWithStrings)) {
             $this->info('No translatable strings were found.');
 
             return;
