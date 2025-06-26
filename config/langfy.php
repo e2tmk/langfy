@@ -36,10 +36,10 @@ return [
     | the translation service will create translations for.
     |
     */
-    'to_language' => env('LANGFY_TO_LANGUAGES', [
+    'to_language' => [
         'es_ES', // Spanish (Spain)
         'pt_BR', // Portuguese (Brazil)
-    ]),
+    ],
 
     /*
     |--------------------------------------------------------------------------

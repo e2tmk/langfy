@@ -23,7 +23,8 @@ export default defineConfig({
             {
                 text: "Getting Started",
                 items: [
-                    { text: "Introduction", link: "/" },
+                    { text: "Introduction", link: "/introduction" },
+                    { text: "Configuration", link: "/configuration" },
                     { text: "Finding Strings", link: "/finding-strings" },
                 ],
             },
