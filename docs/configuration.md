@@ -2,7 +2,7 @@
 
 ## Overview
 
-Langfy provides extensive configuration options to customize string discovery, AI translation, and general behavior. 
+Langfy provides extensive configuration options to customize string discovery, AI translation, and general behavior.
 All configuration is managed through the `config/langfy.php` file and environment variables.
 
 ## Publishing Configuration
@@ -10,7 +10,7 @@ All configuration is managed through the `config/langfy.php` file and environmen
 After installing Langfy, publish the configuration file:
 
 ```bash
-php artisan vendor:publish --tag="langfy"
+php artisan vendor:publish --tag="langfy-config"
 ```
 
 This creates `config/langfy.php` with all available options and their default values.
@@ -19,10 +19,10 @@ This creates `config/langfy.php` with all available options and their default va
 
 The configuration file is organized into several sections:
 
-- **[Context](#context)**: Additional context for AI translations
-- **[Languages](#languages)**: Source and target language settings
-- **[Finder](#finder-configuration)**: String discovery options
-- **[AI Translation](#ai-translation)**: AI provider and model settings
+-   **[Context](#context)**: Additional context for AI translations
+-   **[Languages](#languages)**: Source and target language settings
+-   **[Finder](#finder-configuration)**: String discovery options
+-   **[AI Translation](#ai-translation)**: AI provider and model settings
 
 ## Context
 
@@ -60,8 +60,9 @@ Configure the language your application strings are written in:
 ```
 
 **Supported Values:**
-- Standard locale codes: `en`, `es`, `fr`, `de`, `pt`, etc.
-- Regional variants: `en_US`, `en_GB`, `pt_BR`, `es_ES`, etc.
+
+-   Standard locale codes: `en`, `es`, `fr`, `de`, `pt`, etc.
+-   Regional variants: `en_US`, `en_GB`, `pt_BR`, `es_ES`, etc.
 
 ### Target Languages
 
@@ -192,6 +193,7 @@ Control translation creativity and consistency:
 ```
 
 **Recommendations:**
-- **0.0-0.2**: Best for consistent, professional translations
-- **0.3-0.5**: Good for creative content that needs variety
-- **0.6-1.0**: Use sparingly, may produce inconsistent results
+
+-   **0.0-0.2**: Best for consistent, professional translations
+-   **0.3-0.5**: Good for creative content that needs variety
+-   **0.6-1.0**: Use sparingly, may produce inconsistent results
