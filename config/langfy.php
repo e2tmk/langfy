@@ -87,4 +87,17 @@ return [
         'provider'    => env('LANGFY_AI_PROVIDER', Prism\Prism\Enums\Provider::OpenAI),
         'temperature' => env('LANGFY_AI_TEMPERATURE', 0.2),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Queue Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for asynchronous translation processing using Laravel queues.
+    |
+    */
+    'queue' => [
+        'connection' => env('LANGFY_QUEUE_CONNECTION', 'default'),
+        'name'       => env('LANGFY_QUEUE_NAME', 'default'),
+    ],
 ];
