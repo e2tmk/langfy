@@ -6,6 +6,7 @@ namespace Langfy;
 
 use Langfy\Enums\Context;
 use Langfy\Helpers\Utils;
+use Langfy\Jobs\TranslateStringsJob;
 use Langfy\Services\AITranslator;
 use Langfy\Services\Finder;
 
@@ -16,6 +17,8 @@ class Langfy
     protected bool $enableSave = false;
 
     protected bool $enableTranslate = false;
+
+    protected bool $enableAsync = false;
 
     protected string | array | null $translateTo = null;
 
@@ -32,7 +35,7 @@ class Langfy
     protected function __construct(protected Context $context, protected ?string $moduleName = null)
     {
         $this->setupDefaultPaths();
-        $this->utils = new Utils();
+        $this->utils = new Utils;
     }
 
     public static function for(Context $context, ?string $moduleName = null): self
@@ -64,6 +67,14 @@ class Langfy
         if (filled($to)) {
             $this->translateTo = $to;
         }
+
+        return $this;
+    }
+
+    /** Enable async functionality for translations. */
+    public function async(bool $enabled = true): self
+    {
+        $this->enableAsync = $enabled;
 
         return $this;
     }
@@ -168,6 +179,10 @@ class Langfy
 
         $fromLanguage = config('langfy.from_language', 'en');
         $toLanguages  = $this->getTargetLanguages();
+
+        if ($this->enableAsync) {
+            return $this->dispatchAsyncTranslations($strings, $fromLanguage, $toLanguages);
+        }
 
         return collect($toLanguages)
             ->mapWithKeys(function (string $toLanguage) use ($fromLanguage, $strings): array {
@@ -319,6 +334,36 @@ class Langfy
         return $stringsNeedingTranslation->unique()->toArray();
     }
 
+    /** Dispatch async translation jobs. */
+    protected function dispatchAsyncTranslations(array $strings, string $fromLanguage, array $toLanguages): array
+    {
+        $dispatchedJobs = [];
+
+        collect($toLanguages)->each(function (string $toLanguage) use ($strings, $fromLanguage, &$dispatchedJobs): void {
+            $stringsForThisLanguage = $this->getUntranslatedStringsForLanguage($strings, $toLanguage);
+
+            if (blank($stringsForThisLanguage)) {
+                return;
+            }
+
+            TranslateStringsJob::dispatch(
+                $stringsForThisLanguage,
+                $fromLanguage,
+                $toLanguage,
+                $this->getLanguageFilePath($toLanguage),
+                $this->context->name,
+                $this->moduleName
+            );
+
+            $dispatchedJobs[$toLanguage] = [
+                'strings_count'  => count($stringsForThisLanguage),
+                'job_dispatched' => true,
+            ];
+        });
+
+        return $dispatchedJobs;
+    }
+
     /** Save translations to file. */
     protected function saveTranslations(array $translations, string $language): void
     {
@@ -328,6 +373,6 @@ class Langfy
 
     public static function utils(): Utils
     {
-        return new Utils();
+        return new Utils;
     }
 }
