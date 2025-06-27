@@ -61,7 +61,7 @@ composer require e2tmk/langfy --dev
 Publish the configuration file:
 
 ```bash
-php artisan vendor:publish --tag="langfy"
+php artisan vendor:publish --tag="langfy-config"
 ```
 
 ### Basic Usage
