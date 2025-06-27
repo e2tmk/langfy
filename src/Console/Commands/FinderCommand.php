@@ -17,7 +17,8 @@ class FinderCommand extends Command
                            {--app : Run on the main application instead of modules}
                            {--modules=* : Specific modules to process (comma-separated)}
                            {--no-trans : Skip translation prompt}
-                           {--trans : Auto-translate without prompting}';
+                           {--trans : Auto-translate without prompting}
+                           {--queue : Run translations asynchronously using queues}';
 
     protected $description = 'Find translation strings in application or modules and update language files';
 
@@ -34,7 +35,7 @@ class FinderCommand extends Command
 
     protected function performLangfyOperation(Context $context, ?string $moduleName = null): array
     {
-        $langfy = $moduleName !== null && $moduleName !== '' && $moduleName !== '0'
+        $langfy = filled($moduleName)
             ? Langfy::for($context, $moduleName)
             : Langfy::for($context);
 
@@ -184,20 +185,43 @@ class FinderCommand extends Command
 
     private function translateResult(array $result, array $toLanguages): void
     {
-        $area = $result['module'] ?? 'application';
-        $this->info("Translating {$area} strings...");
+        $area    = $result['module'] ?? 'application';
+        $isAsync = $this->option('queue');
+
+        $isAsync ? $this->info("Dispatching async translation jobs for {$area}...") : $this->info("Translating {$area} strings...");
 
         $langfy = $result['module']
             ? Langfy::for($result['context'], $result['module'])
             : Langfy::for($result['context']);
 
-        $langfy = $langfy->translate(to: $toLanguages)
-            ->onTranslateProgress(function (int $current, int $total, string $language) use ($area): void {
-                $percentage = $total > 0 ? round(($current / $total) * 100, 1) : 0;
-                $this->info("Translating {$area} to {$language}: {$current}/{$total} ({$percentage}%)");
-            });
+        $langfy = $langfy->translate(to: $toLanguages);
 
-        $langfy->perform();
+        // Enable async mode if any async flag is present
+        $isAsync ? $langfy->async() : $langfy->onTranslateProgress(function (int $current, int $total, array $extraData = []) use ($area): void {
+            $language   = $extraData['language'] ?? 'unknown';
+            $percentage = $total > 0 ? round(($current / $total) * 100, 1) : 0;
+            $this->info("Translating {$area} to {$language}: {$current}/{$total} ({$percentage}%)");
+        });
+
+        $translationResult = $langfy->perform();
+
+        if (! $isAsync && ! isset($translationResult['translations'])) {
+            return;
+        }
+
+        $jobsDispatched = 0;
+        $totalStrings   = 0;
+
+        foreach ($translationResult['translations'] as $languageData) {
+            if (! isset($languageData['job_dispatched']) && ! $languageData['job_dispatched']) {
+                continue;
+            }
+
+            $jobsDispatched++;
+            $totalStrings += $languageData['strings_count'] ?? 0;
+        }
+
+        $this->info("Dispatched {$jobsDispatched} translation jobs for {$totalStrings} strings in {$area}");
     }
 
     private function displaySummary(): void

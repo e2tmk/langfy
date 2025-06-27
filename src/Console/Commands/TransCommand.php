@@ -16,7 +16,8 @@ class TransCommand extends Command
     protected $signature = 'langfy:trans
                            {--to=* : Target languages to translate to (comma-separated)}
                            {--app : Run on the main application instead of modules}
-                           {--modules=* : Specific modules to process (comma-separated)}';
+                           {--modules=* : Specific modules to process (comma-separated)}
+                           {--queue : Run translations asynchronously using queues}';
 
     protected $description = 'Translate strings in application or modules using AI';
 
@@ -71,14 +72,23 @@ class TransCommand extends Command
     protected function performLangfyOperation(Context $context, ?string $moduleName = null): array
     {
         $toLanguages = $this->getTargetLanguages();
+        $isAsync     = $this->option('queue');
+        $area        = $moduleName ?? 'application';
 
-        $langfy = $moduleName !== null && $moduleName !== '' && $moduleName !== '0'
+        $isAsync
+            ? $this->info("Dispatching async translation jobs for {$area}...")
+            : $this->info("Translating {$area} strings...");
+
+        $langfy = filled($moduleName)
             ? Langfy::for($context, $moduleName)
             : Langfy::for($context);
 
-        $langfy = $langfy->translate(to: $toLanguages)
-            ->onTranslateProgress(function (int $current, int $total, array $extraData = []) use ($moduleName): void {
-                $area       = $moduleName ?? 'application';
+        $langfy = $langfy->translate(to: $toLanguages);
+
+        // Enable async mode if any async flag is present
+        $isAsync
+            ? $langfy->async()
+            : $langfy->onTranslateProgress(function (int $current, int $total, array $extraData = []) use ($area): void {
                 $language   = $extraData['language'] ?? 'unknown';
                 $percentage = $total > 0 ? round(($current / $total) * 100, 1) : 0;
                 $this->info("Translating {$area} to {$language}: {$current}/{$total} ({$percentage}%)");
@@ -86,22 +96,40 @@ class TransCommand extends Command
 
         $result = $langfy->perform();
 
-        $translationCount = 0;
+        if (! isset($result['translations'])) {
+            return [
+                'count'           => 0,
+                'translations'    => [],
+                'context'         => $context,
+                'module'          => $moduleName,
+                'async'           => $isAsync,
+                'jobs_dispatched' => 0,
+            ];
+        }
 
-        if (isset($result['translations']) && is_array($result['translations'])) {
-            foreach ($result['translations'] as $translations) {
-                $translationCount += count($translations);
+        $jobsDispatched = 0;
+        $totalStrings   = 0;
+
+        foreach ($result['translations'] as $languageData) {
+            if ($isAsync && isset($languageData['job_dispatched']) && $languageData['job_dispatched']) {
+                $jobsDispatched++;
+                $totalStrings += $languageData['strings_count'] ?? 0;
+            } elseif (! $isAsync) {
+                $totalStrings += count($languageData);
             }
         }
 
-        $area = $moduleName ?? 'main application';
-        $this->info("Translated {$translationCount} strings in {$area}");
+        $isAsync
+            ? $this->info("Dispatched {$jobsDispatched} translation jobs for {$totalStrings} strings in {$area}")
+            : $this->info("Translated {$totalStrings} strings in {$area}");
 
         return [
-            'count'        => $translationCount,
-            'translations' => $result['translations'] ?? [],
-            'context'      => $context,
-            'module'       => $moduleName,
+            'count'           => $totalStrings,
+            'translations'    => $result['translations'],
+            'context'         => $context,
+            'module'          => $moduleName,
+            'async'           => $isAsync,
+            'jobs_dispatched' => $jobsDispatched,
         ];
     }
 
