@@ -38,7 +38,11 @@ export default defineConfig({
             {
                 collapsed: true,
                 text: "API Reference",
-                items: [{ text: "Langfy Class", link: "/api/langfy" }],
+                items: [
+                    { text: "Langfy Class", link: "/api/langfy" },
+                    { text: "Finder Class", link: "/api/finder" },
+                    { text: "AITranslator Class", link: "/api/aitranslator" },
+                ],
             },
         ],
 
