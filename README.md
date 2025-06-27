@@ -16,7 +16,7 @@ Langfy simplifies the internationalization process for your Laravel projects by 
 You can install the package via Composer:
 
 ```bash
-composer require e2tmk/langfy
+composer require e2tmk/langfy --dev
 ```
 
 ## Features

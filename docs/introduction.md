@@ -55,7 +55,7 @@ Langfy is a powerful Laravel package designed to streamline the translation work
 Install Langfy via Composer:
 
 ```bash
-composer require e2tmk/langfy
+composer require e2tmk/langfy --dev
 ```
 
 Publish the configuration file:
