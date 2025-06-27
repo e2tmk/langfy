@@ -413,18 +413,13 @@ public function translate(array $strings): array
 ## Documentation Standards
 
 ### 1. PHPDoc Requirements
-**DOCUMENT**: All public methods:
+**DOCUMENT**: All public methods, Only on parameters that are not self-explanatory
 
 ```php
 /**
- * Save an array of strings to a JSON file.
- *
- * @param  array<string>  $strings  The strings to save.
- * @param  string  $filePath  The path to the JSON file where the strings will be saved.
- *
- * @throws FileNotFoundException
+ * @param array<string, <string, string>> $extraData Additional data to include in the translation request.
  */
-public static function saveStringsToFile(array $strings, string $filePath): void
+public static function exampleMethod($extraData): void
 {
     // Implementation
 }
@@ -441,9 +436,20 @@ $content = preg_replace('/\/\/.*$/m', '', $content);
 $content = preg_replace('/\s*\n\s*/', ' ', (string) $content);
 ```
 
+## Documentation Standards
+
+### 1. VitePress Documentation
+The project's documentation is built using **VitePress**. All documentation files are written in Markdown (`.md`) and are located in the `docs` directory.
+
+- **Structure**: The sidebar, navigation, and other site-level configurations are managed in `docs/.vitepress/config.mts`.
+- **Content**: Documentation pages are individual Markdown files. Use standard Markdown syntax, along with VitePress-specific features like custom containers and components when necessary.
+- **Writing Style**: The tone should be clear, concise, and developer-focused. Explain concepts simply and provide practical code examples. Use headings, lists, and code blocks to structure the content for readability.
+- **Updating**: When adding new features or changing existing ones, ensure the corresponding documentation is updated. This includes API references, command descriptions, and configuration options.
+
 ## Summary
 
 When working on the Langfy package, always remember:
+
 
 1. **Use Laravel helpers**: `filled()`, `blank()`, `collect()`, `optional()`
 2. **Implement early returns**: Clean, readable code flow
