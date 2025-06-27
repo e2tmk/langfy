@@ -54,6 +54,29 @@ php artisan langfy:trans --modules=User
 
 The command automatically detects if Laravel Modules is available and enabled.
 
+### Queue Mode
+
+Run translations asynchronously using Laravel's queue system:
+
+```shell
+# Run translations in background using queues
+php artisan langfy:trans --queue
+
+# Combine with other options
+php artisan langfy:trans --to=es_ES,pt_BR --app --queue
+php artisan langfy:trans --modules=User,Product --queue
+```
+
+When using the `--queue` option, translation jobs are dispatched to Laravel's queue system instead of running synchronously. This is particularly useful for:
+
+- Large translation batches that might timeout
+- Background processing to avoid blocking the command line
+- Better resource management in production environments
+
+**Queue Requirements:**
+- Laravel queue system must be configured and running
+- Queue workers must be active to process the jobs
+
 ### Combined Options
 
 Combine different options for precise control:
@@ -64,6 +87,9 @@ php artisan langfy:trans --to=es_ES,pt_BR --app --modules=User,Product
 
 # Translate only modules with default languages
 php artisan langfy:trans --modules=Blog,Commerce
+
+# Run translations asynchronously
+php artisan langfy:trans --to=es_ES,pt_BR --app --modules=User,Product --queue
 ```
 
 ## Interactive Mode
@@ -140,7 +166,7 @@ The command optimizes processing order and provides progress feedback for each t
 
 The command provides detailed output throughout execution:
 
-**Translation Progress:**
+**Translation Progress (Synchronous):**
 
 ```
 Target languages: es_ES, pt_BR
@@ -153,6 +179,19 @@ Starting in "Product Module"
 Translating Product to es_ES: 12/12 (100%)
 Translating Product to pt_BR: 12/12 (100%)
 Translated 24 strings in Product Module
+```
+
+**Translation Progress (Asynchronous with --queue):**
+
+```
+Target languages: es_ES, pt_BR
+Starting in "User Module"
+Dispatching async translation jobs for User Module...
+Dispatched 2 translation jobs for 8 strings in User Module
+
+Starting in "Product Module"
+Dispatching async translation jobs for Product Module...
+Dispatched 2 translation jobs for 12 strings in Product Module
 ```
 
 **Summary Table:**

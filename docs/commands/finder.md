@@ -51,9 +51,26 @@ php artisan langfy:finder --no-trans
 # Auto-translate without prompting
 php artisan langfy:finder --trans
 
+# Run translations asynchronously using queues
+php artisan langfy:finder --trans --queue
+
 # Combine options
 php artisan langfy:finder --app --trans
+php artisan langfy:finder --app --trans --queue
 ```
+
+**Queue Mode:**
+
+The `--queue` option runs translations asynchronously using Laravel's queue system. This is useful for:
+
+- Large translation batches that might timeout
+- Background processing to avoid blocking the command line
+- Better resource management in production environments
+
+**Queue Requirements:**
+- Laravel queue system must be configured and running
+- Queue workers must be active to process the jobs
+- Must be used in combination with `--trans` option
 
 ## Interactive Mode
 
@@ -120,9 +137,12 @@ php artisan langfy:finder --app --modules=User,Product --trans
 
 # Process all modules without app
 php artisan langfy:finder --modules=User,Product,Order --no-trans
+
+# Process with asynchronous translation
+php artisan langfy:finder --app --modules=User,Product --trans --queue
 ```
 
-The command optimizes processing order and provides progress feedback for each target.
+The command optimizes processing order and provides progress feedback for each target. When using `--queue`, translation jobs are dispatched to the background for processing.
 
 ## Output and Reporting
 
@@ -152,7 +172,7 @@ Found 12 translatable strings in Product Module
 35 strings found in total
 ```
 
-**Translation Progress:**
+**Translation Progress (Synchronous):**
 
 ```
 Translating found strings...
@@ -163,3 +183,12 @@ Translating User to fr: 8/8 (100%)
 Translating User to de: 8/8 (100%)
 ```
 
+**Translation Progress (Asynchronous with --queue):**
+
+```
+Translating found strings...
+Target languages: es, fr, de
+
+Dispatching async translation jobs for User...
+Dispatched 3 translation jobs for 8 strings in User
+```

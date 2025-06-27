@@ -79,6 +79,7 @@ For the majority of the Langfy documentation, we'll discuss each method availabl
 - [finder](#method-finder)
 - [save](#method-save)
 - [translate](#method-translate)
+- [async](#method-async)
 - [onFinderProgress](#method-onFinder-progress)
 - [onTranslateProgress](#method-onTranslate-progress)
 - [getStrings](#method-getStrings)
@@ -181,6 +182,58 @@ The translation uses AI providers configured in your `langfy.ai` configuration a
 -   Automatic chunking for large string sets
 -   Retry logic with exponential backoff
 -   Progress tracking and callbacks
+
+#### `async()`
+
+The `async` method enables asynchronous translation processing using Laravel's queue system. When enabled, translation jobs are dispatched to queues instead of running synchronously:
+
+```php
+// Enable async translation
+$langfy = Langfy::for(Context::Application)
+    ->finder()
+    ->save()
+    ->translate(to: ['pt_BR', 'es_ES'])
+    ->async(); // Enable async mode
+
+// Disable async translation (default behavior)
+$langfy = Langfy::for(Context::Application)
+    ->finder()
+    ->save()
+    ->translate(to: ['pt_BR', 'es_ES'])
+    ->async(false); // Disable async mode
+```
+
+**Async Mode Benefits:**
+
+-   **Non-blocking execution**: Commands return immediately after dispatching jobs
+-   **Better resource management**: Large translation batches don't consume memory for extended periods
+-   **Scalability**: Multiple queue workers can process translations in parallel
+-   **Fault tolerance**: Failed jobs can be retried automatically
+
+**Requirements for Async Mode:**
+
+-   Laravel queue system must be configured and running
+-   Queue workers must be active to process the jobs
+-   `TranslateStringsJob` will be dispatched for each target language
+
+**Return Behavior:**
+
+When async mode is enabled, the `perform()` method returns job dispatch information instead of actual translations:
+
+```php
+$result = Langfy::for(Context::Application)
+    ->translate(to: ['pt_BR', 'es_ES'])
+    ->async()
+    ->perform();
+
+// Returns:
+// [
+//     'translations' => [
+//         'pt_BR' => ['job_dispatched' => true, 'strings_count' => 25],
+//         'es_ES' => ['job_dispatched' => true, 'strings_count' => 25]
+//     ]
+// ]
+```
 
 ## Progress Callbacks
 
@@ -386,6 +439,53 @@ foreach ($modules as $module) {
 }
 
 echo "Total strings found: {$totalStrings}\n";
+```
+
+### Asynchronous Translation Workflow
+
+Use async mode for large translation batches:
+
+```php
+// Dispatch translation jobs to queue
+$result = Langfy::for(Context::Application)
+    ->finder()
+    ->save()
+    ->translate(to: ['pt_BR', 'es_ES', 'fr_FR'])
+    ->async()
+    ->perform();
+
+echo "Found {$result['found_strings']} strings\n";
+
+foreach ($result['translations'] as $language => $jobInfo) {
+    if ($jobInfo['job_dispatched']) {
+        echo "Dispatched job for {$language}: {$jobInfo['strings_count']} strings\n";
+    }
+}
+```
+
+### Conditional Async Processing
+
+Enable async mode based on string count:
+
+```php
+$langfy = Langfy::for(Context::Application)
+    ->finder()
+    ->save()
+    ->translate(to: ['pt_BR', 'es_ES']);
+
+// Get string count first
+$strings = $langfy->getStrings();
+$stringCount = count($strings);
+
+// Use async for large batches
+if ($stringCount > 100) {
+    $langfy->async();
+    echo "Using async mode for {$stringCount} strings\n";
+} else {
+    echo "Using sync mode for {$stringCount} strings\n";
+}
+
+$result = $langfy->perform();
 ```
 
 > [!NOTE]
