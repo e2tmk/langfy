@@ -6,6 +6,8 @@ namespace Langfy;
 
 use Langfy\Console\Commands\FinderCommand;
 use Langfy\Console\Commands\TransCommand;
+use Langfy\Livewire\LangfyView;
+use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -17,6 +19,9 @@ class LangfyServiceProvider extends PackageServiceProvider
             ->name('langfy')
             ->hasConfigFile()
             ->hasViews()
+            ->hasAssets()
+            ->hasRoutes(['web'])
+            ->hasViewComponent('langfy', LangfyView::class)
             ->hasCommands([
                 FinderCommand::class,
                 TransCommand::class,
