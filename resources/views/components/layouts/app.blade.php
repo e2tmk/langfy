@@ -7,9 +7,9 @@
 
     <tallstackui:script />
     @livewireStyles
-    <link rel="stylesheet" href="{{ asset('vendor/langfy/app.css') }}">
+    @vite(['resources/css/app.css'])
 </head>
-    <body class="font-sans antialiased bg-gray-100">
+    <body class="font-sans antialiased">
         <div class="min-h-screen">
             <main>
                 {{ $slot }}
