@@ -7,6 +7,7 @@ namespace Langfy\Services;
 use Illuminate\Container\Attributes\Config;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Process;
 use Langfy\Concerns\HasProgressCallbacks;
 use Langfy\Langfy;
 use Langfy\Providers\AIProvider;
@@ -109,20 +110,26 @@ class AITranslator
         $totalChunks     = $chunks->count();
         $processedChunks = 0;
 
-        $chunks->each(function (Collection $chunk) use (&$translations, &$processedChunks, $totalChunks): void {
-            $chunkTranslations = $this->translateChunk($chunk);
-            $translations      = $translations->merge($chunkTranslations);
+        $pool = Process::pool(function ($pool) use ($chunks, &$translations, &$processedChunks, $totalChunks): void {
+            foreach ($chunks as $chunk) {
+                $pool->execute(function () use ($chunk, &$translations, &$processedChunks, $totalChunks): void {
+                    $chunkTranslations = $this->translateChunk($chunk);
+                    $translations      = $translations->merge($chunkTranslations);
 
-            // Save chunk immediately if callback is provided
-            if (filled($this->saveCallback) && filled($chunkTranslations)) {
-                ($this->saveCallback)($chunkTranslations);
+                    // Save chunk immediately if callback is provided
+                    if (filled($this->saveCallback) && filled($chunkTranslations)) {
+                        ($this->saveCallback)($chunkTranslations);
+                    }
+
+                    $processedChunks++;
+                    $this->callProgressCallback($processedChunks, $totalChunks, extraData: [
+                        'language' => $this->toLanguage,
+                    ]);
+                });
             }
-
-            $processedChunks++;
-            $this->callProgressCallback($processedChunks, $totalChunks, extraData: [
-                'language' => $this->toLanguage,
-            ]);
         });
+
+        $pool->wait();
 
         return $this->ensureAllStringsTranslated($translations->toArray());
     }
@@ -153,16 +160,26 @@ class AITranslator
             $fromLanguage = config('langfy.from_language', 'en');
         }
 
-        collect($toLanguages)
-            ->filter(fn ($language): bool => is_string($language) && filled($language))
-            ->each(function (string $language) use ($strings, &$translatedStrings, $fromLanguage): void {
-                $result = self::configure()
+        $results = Process::pool(function ($pool) use ($toLanguages, $strings, $fromLanguage): void {
+            foreach ($toLanguages as $language) {
+                if (! is_string($language)) {
+                    continue;
+                }
+
+                if (blank($language)) {
+                    continue;
+                }
+                $pool->execute(fn (): array => self::configure()
                     ->from($fromLanguage)
                     ->to($language)
-                    ->run($strings);
+                    ->run($strings));
+            }
+        })->wait();
 
-                $translatedStrings->put($language, $result);
-            });
+        foreach ($results as $index => $result) {
+            $language = $toLanguages[$index];
+            $translatedStrings->put($language, $result->output());
+        }
 
         // If only one target language is specified, return the first translated string
         if ($singleToLanguage && $translatedStrings->isNotEmpty()) {
@@ -208,19 +225,24 @@ class AITranslator
                 ->mapWithKeys(fn ($key) => [$key => $this->strings[$key]])
                 ->toArray();
 
-            $missingTranslations = collect($stringsToTranslate)
-                ->chunk($this->chunkSize)
-                ->flatMap(function (Collection $chunk): array {
-                    $chunkTranslations = $this->translateChunk($chunk);
+            $pool = Process::pool(function ($pool) use ($stringsToTranslate): void {
+                collect($stringsToTranslate)
+                    ->chunk($this->chunkSize)
+                    ->each(function (Collection $chunk) use ($pool): void {
+                        $pool->execute(function () use ($chunk): array {
+                            $chunkTranslations = $this->translateChunk($chunk);
 
-                    // Save chunk immediately if callback is provided
-                    if (filled($this->saveCallback) && filled($chunkTranslations)) {
-                        ($this->saveCallback)($chunkTranslations);
-                    }
+                            // Save chunk immediately if callback is provided
+                            if (filled($this->saveCallback) && filled($chunkTranslations)) {
+                                ($this->saveCallback)($chunkTranslations);
+                            }
 
-                    return $chunkTranslations;
-                })
-                ->toArray();
+                            return $chunkTranslations;
+                        });
+                    });
+            })->wait();
+
+            $missingTranslations = collect($pool)->flatMap(fn ($result) => $result->output())->toArray();
 
             // If no translations were returned, we assume the API is not responding correctly
             if (blank($missingTranslations)) {
