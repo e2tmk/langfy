@@ -14,6 +14,8 @@ use Throwable;
 
 class AIProvider
 {
+    protected const QUOTE_PLACEHOLDER = '@@QUOTE@@';
+
     public function __construct(
         protected string $fromLanguage,
         protected string $toLanguage,
@@ -28,10 +30,16 @@ class AIProvider
 
     public function translate(array $strings): array
     {
-        $prompt = $this->buildPrompt($strings);
-        $schema = $this->buildSchema($strings);
+        // Replace quotes with placeholders in keys for schema compatibility
+        $processedStrings = $this->replaceQuotesInKeys($strings);
 
-        return $this->executeWithRetry($prompt, $schema, $strings);
+        $prompt = $this->buildPrompt($processedStrings);
+        $schema = $this->buildSchema($processedStrings);
+
+        $translations = $this->executeWithRetry($prompt, $schema, $processedStrings);
+
+        // Restore original keys in the result
+        return $this->restoreOriginalKeys($translations, $strings);
     }
 
     protected function executeWithRetry(string $prompt, ObjectSchema $schema, array $strings): array
@@ -73,7 +81,8 @@ class AIProvider
             ->implode("\n");
 
         return "Translate the following strings from {$this->fromLanguage} to {$this->toLanguage}. " .
-            "Keep the original format and preserve any HTML or placeholders.\n\n" .
+            "Keep the original format and preserve any HTML or placeholders. " .
+            "Note: " . self::QUOTE_PLACEHOLDER . " represents double quotes in the original text.\n\n" .
             $stringsList;
     }
 
@@ -85,7 +94,7 @@ class AIProvider
             properties: array_map(
                 fn ($key): StringSchema => new StringSchema(
                     $key,
-                    "Translation for '{$strings[$key]}' in {$this->toLanguage}"
+                    "Translation to {$this->toLanguage}"
                 ),
                 array_keys($strings)
             ),
@@ -137,5 +146,45 @@ class AIProvider
         $provider = $this->modelProvider instanceof Provider ? $this->modelProvider->value : $this->modelProvider;
 
         config(["prism.providers.{$provider}.api_key" => $apiKey]);
+    }
+
+    /**
+     * Replace double quotes in array keys with placeholders to avoid JSON Schema issues
+     */
+    protected function replaceQuotesInKeys(array $strings): array
+    {
+        $processedStrings = [];
+
+        foreach ($strings as $key => $value) {
+            $processedKey = str_replace('"', self::QUOTE_PLACEHOLDER, $key);
+            $processedStrings[$processedKey] = $value;
+        }
+
+        return $processedStrings;
+    }
+
+    /**
+     * Restore original keys with quotes from the processed results
+     */
+    protected function restoreOriginalKeys(array $translations, array $originalStrings): array
+    {
+        $restoredTranslations = [];
+
+        // Create a mapping from processed keys back to original keys
+        $keyMapping = [];
+        foreach ($originalStrings as $originalKey => $value) {
+            $processedKey = str_replace('"', self::QUOTE_PLACEHOLDER, $originalKey);
+            $keyMapping[$processedKey] = $originalKey;
+        }
+
+        // Restore the original keys in translations
+        foreach ($translations as $processedKey => $translation) {
+            $originalKey = $keyMapping[$processedKey] ?? str_replace(self::QUOTE_PLACEHOLDER, '"', $processedKey);
+
+            $restoredTranslation = str_replace(self::QUOTE_PLACEHOLDER, '"', $translation);
+            $restoredTranslations[$originalKey] = $restoredTranslation;
+        }
+
+        return $restoredTranslations;
     }
 }
