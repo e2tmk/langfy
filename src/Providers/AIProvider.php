@@ -156,7 +156,7 @@ class AIProvider
         $processedStrings = [];
 
         foreach ($strings as $key => $value) {
-            $processedKey = str_replace('"', self::QUOTE_PLACEHOLDER, $key);
+            $processedKey                    = str_replace('"', self::QUOTE_PLACEHOLDER, $key);
             $processedStrings[$processedKey] = $value;
         }
 
@@ -172,8 +172,9 @@ class AIProvider
 
         // Create a mapping from processed keys back to original keys
         $keyMapping = [];
-        foreach ($originalStrings as $originalKey => $value) {
-            $processedKey = str_replace('"', self::QUOTE_PLACEHOLDER, $originalKey);
+
+        foreach (array_keys($originalStrings) as $originalKey) {
+            $processedKey              = str_replace('"', self::QUOTE_PLACEHOLDER, $originalKey);
             $keyMapping[$processedKey] = $originalKey;
         }
 
@@ -181,7 +182,7 @@ class AIProvider
         foreach ($translations as $processedKey => $translation) {
             $originalKey = $keyMapping[$processedKey] ?? str_replace(self::QUOTE_PLACEHOLDER, '"', $processedKey);
 
-            $restoredTranslation = str_replace(self::QUOTE_PLACEHOLDER, '"', $translation);
+            $restoredTranslation                = str_replace(self::QUOTE_PLACEHOLDER, '"', $translation);
             $restoredTranslations[$originalKey] = $restoredTranslation;
         }
 
