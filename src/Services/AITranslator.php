@@ -36,7 +36,7 @@ class AITranslator
 
     protected bool $useProcessPool = true;
 
-    protected int $maxConcurrentProcesses = 3;
+    protected int $maxConcurrentProcesses = 5;
 
     public function __construct(
         #[Config('langfy.from_language')]
