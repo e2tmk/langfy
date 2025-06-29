@@ -4,8 +4,6 @@
 -   [Usage](#usage)
 -   [Methods](#methods)
 -   [Process Pool](#process-pool)
--   [Progress Callbacks](#progress-callbacks)
--   [Performance Tips](#performance-tips)
 
 ## Introduction
 
