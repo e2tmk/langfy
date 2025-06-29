@@ -28,6 +28,8 @@ class AITranslator
 
     protected ?AIProvider $aiProvider = null;
 
+    protected ?\Closure $saveCallback = null;
+
     public function __construct(
         #[Config('langfy.from_language')]
         protected string $fromLanguage,
@@ -87,6 +89,13 @@ class AITranslator
         return $this;
     }
 
+    public function onSave(\Closure $callback): AITranslator
+    {
+        $this->saveCallback = $callback;
+
+        return $this;
+    }
+
     public function run(array $strings): array
     {
         if (blank($strings)) {
@@ -103,6 +112,11 @@ class AITranslator
         $chunks->each(function (Collection $chunk) use (&$translations, &$processedChunks, $totalChunks): void {
             $chunkTranslations = $this->translateChunk($chunk);
             $translations      = $translations->merge($chunkTranslations);
+
+            // Save chunk immediately if callback is provided
+            if (filled($this->saveCallback) && filled($chunkTranslations)) {
+                ($this->saveCallback)($chunkTranslations);
+            }
 
             $processedChunks++;
             $this->callProgressCallback($processedChunks, $totalChunks, extraData: [
@@ -196,7 +210,16 @@ class AITranslator
 
             $missingTranslations = collect($stringsToTranslate)
                 ->chunk($this->chunkSize)
-                ->flatMap(fn (Collection $chunk): array => $this->translateChunk($chunk))
+                ->flatMap(function (Collection $chunk): array {
+                    $chunkTranslations = $this->translateChunk($chunk);
+
+                    // Save chunk immediately if callback is provided
+                    if (filled($this->saveCallback) && filled($chunkTranslations)) {
+                        ($this->saveCallback)($chunkTranslations);
+                    }
+
+                    return $chunkTranslations;
+                })
                 ->toArray();
 
             // If no translations were returned, we assume the API is not responding correctly

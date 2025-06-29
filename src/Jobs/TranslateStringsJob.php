@@ -8,9 +8,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Langfy\Helpers\Utils;
 use Langfy\Langfy;
 use Langfy\Services\AITranslator;
 
@@ -27,7 +25,8 @@ class TranslateStringsJob implements ShouldQueue
         protected string $filePath,
         protected ?string $context = null,
         protected ?string $moduleName = null
-    ) {}
+    ) {
+    }
 
     public function handle(): void
     {
