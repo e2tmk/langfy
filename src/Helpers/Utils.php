@@ -65,13 +65,24 @@ class Utils
 
     public function normalizeStringsArray(array $strings): array
     {
-        // If all keys are strings, return as is
-        if (collect($strings)->keys()->every(fn ($key): bool => is_string($key))) {
-            return $strings;
+        // First, normalize escaped apostrophes in both keys and values
+        $normalizedStrings = collect($strings)
+            ->mapWithKeys(function ($value, $key) {
+                // Normalize escaped apostrophes to actual apostrophes
+                $normalizedKey   = is_string($key) ? str_replace("\\'", "'", $key) : $key;
+                $normalizedValue = is_string($value) ? str_replace("\\'", "'", $value) : $value;
+
+                return [$normalizedKey => $normalizedValue];
+            })
+            ->toArray();
+
+        // If all keys are strings, return the normalized array
+        if (collect($normalizedStrings)->keys()->every(fn ($key): bool => is_string($key))) {
+            return $normalizedStrings;
         }
 
         // If keys are not strings, convert them to strings
-        return collect($strings)
+        return collect($normalizedStrings)
             ->mapWithKeys(fn ($string) => [$string => $string])
             ->toArray();
     }

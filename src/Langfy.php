@@ -35,7 +35,7 @@ class Langfy
     protected function __construct(protected Context $context, protected ?string $moduleName = null)
     {
         $this->setupDefaultPaths();
-        $this->utils = new Utils;
+        $this->utils = new Utils();
     }
 
     public static function for(Context $context, ?string $moduleName = null): self
@@ -201,11 +201,11 @@ class Langfy
                     $translator->onProgress($this->translateProgressCallback);
                 }
 
-                $translations = $translator->run($stringsForThisLanguage);
+                $translator->onSave(function (array $chunkTranslations) use ($toLanguage): void {
+                    $this->saveTranslations($chunkTranslations, $toLanguage);
+                });
 
-                if (filled($translations)) {
-                    $this->saveTranslations($translations, $toLanguage);
-                }
+                $translations = $translator->run($stringsForThisLanguage);
 
                 return [$toLanguage => $translations];
             })->toArray();
@@ -373,6 +373,6 @@ class Langfy
 
     public static function utils(): Utils
     {
-        return new Utils;
+        return new Utils();
     }
 }
