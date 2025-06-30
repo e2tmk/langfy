@@ -2,6 +2,19 @@
 
 All notable changes to `langfy` will be documented in this file.
 
+## v0.0.2 - 2025-06-30
+
+### What's Changed
+
+* docs: update CLI command in documentation  by @andrefelipe18 in https://github.com/e2tmk/langfy/pull/2
+* feat: concurrent translations by @andrefelipe18 in https://github.com/e2tmk/langfy/pull/3
+
+### New Contributors
+
+* @andrefelipe18 made their first contribution in https://github.com/e2tmk/langfy/pull/2
+
+**Full Changelog**: https://github.com/e2tmk/langfy/compare/v0.0.1...v0.0.2
+
 ## v0.0.1 - 2025-06-27
 
 ### What's Changed
