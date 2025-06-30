@@ -111,7 +111,7 @@ class TransCommand extends Command
         $totalStrings   = 0;
 
         foreach ($result['translations'] as $languageData) {
-            if ($isAsync && isset($languageData['job_dispatched']) && $languageData['job_dispatched']) {
+            if ($isAsync && ($languageData['job_dispatched'] ?? false)) {
                 $jobsDispatched++;
                 $totalStrings += $languageData['strings_count'] ?? 0;
             } elseif (! $isAsync) {
