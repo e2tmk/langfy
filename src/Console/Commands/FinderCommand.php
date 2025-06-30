@@ -213,10 +213,12 @@ class FinderCommand extends Command
         $totalStrings   = 0;
 
         foreach ($translationResult['translations'] as $languageData) {
-            if (! isset($languageData['job_dispatched']) || ! $languageData['job_dispatched']) {
+            if (! isset($languageData['job_dispatched'])) {
                 continue;
             }
-
+            if (! $languageData['job_dispatched']) {
+                continue;
+            }
             $jobsDispatched++;
             $totalStrings += $languageData['strings_count'] ?? 0;
         }
