@@ -6,6 +6,7 @@ namespace Langfy;
 
 use Langfy\Console\Commands\FinderCommand;
 use Langfy\Console\Commands\TransCommand;
+use Langfy\Console\Commands\TranslateChunkCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -20,6 +21,7 @@ class LangfyServiceProvider extends PackageServiceProvider
             ->hasCommands([
                 FinderCommand::class,
                 TransCommand::class,
+                TranslateChunkCommand::class,
             ]);
     }
 }
