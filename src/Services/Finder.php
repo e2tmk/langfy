@@ -177,16 +177,19 @@ class Finder
             }
 
             foreach ($matches[1] as $match) {
+                // Unescape the captured string
+                $unescapedMatch = $this->unescapeString($match);
+
                 // Skip empty strings or obvious non-translatable values
-                if (strlen($match) < 2) {
+                if (strlen($unescapedMatch) < 2) {
                     continue;
                 }
 
-                if ($this->shouldSkipString($match)) {
+                if ($this->shouldSkipString($unescapedMatch)) {
                     continue;
                 }
 
-                $strings[] = $match;
+                $strings[] = $unescapedMatch;
             }
         }
 
@@ -275,5 +278,22 @@ class Finder
         }
 
         return array_unique($strings);
+    }
+
+    /**
+     * Unescape a captured string by converting escaped quotes back to their original form.
+     */
+    protected function unescapeString(string $string): string
+    {
+        // Unescape double quotes
+        $string = str_replace('\\"', '"', $string);
+
+        // Unescape single quotes
+        $string = str_replace("\\'", "'", $string);
+
+        // Unescape backslashes (must be done last)
+        $string = str_replace('\\\\', '\\', $string);
+
+        return $string;
     }
 }

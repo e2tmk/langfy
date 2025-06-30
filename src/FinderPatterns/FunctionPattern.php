@@ -9,23 +9,17 @@ class FunctionPattern extends Pattern
     public function getPatterns(): array
     {
         return [
-            // __('string') pattern
-            '/__\([\'"](.+?)[\'"]\)/',
+            // __('string') pattern - handles escaped quotes and nested structures
+            '/__\(\'((?:[^\'\\\\]|\\\\.)*)\'(?:\s*,|\s*\))/s',
+            '/__\("((?:[^"\\\\]|\\\\.)*)\"(?:\s*,|\s*\))/s',
 
-            // trans('string') pattern
-            '/trans\([\'"](.+?)[\'"]\)/',
+            // trans('string') pattern - handles escaped quotes and nested structures
+            '/trans\(\'((?:[^\'\\\\]|\\\\.)*)\'(?:\s*,|\s*\))/s',
+            '/trans\("((?:[^"\\\\]|\\\\.)*)\"(?:\s*,|\s*\))/s',
 
-            // @lang('string') pattern
-            '/@lang\([\'"](.+?)[\'"]\)/',
-
-            // __('string', []) pattern (with parameters)
-            '/__\([\'"](.+?)[\'"]\s*,/',
-
-            // trans('string', []) pattern (with parameters)
-            '/trans\([\'"](.+?)[\'"]\s*,/',
-
-            // @lang('string', []) pattern (with parameters)
-            '/@lang\([\'"](.+?)[\'"]\s*,/',
+            // @lang('string') pattern - handles escaped quotes and nested structures
+            '/@lang\(\'((?:[^\'\\\\]|\\\\.)*)\'(?:\s*,|\s*\))/s',
+            '/@lang\("((?:[^"\\\\]|\\\\.)*)\"(?:\s*,|\s*\))/s',
         ];
     }
 }
