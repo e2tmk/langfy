@@ -34,6 +34,13 @@ class Finder
         'log',
     ];
 
+    protected array $ignoreFiles = [];
+    protected array $ignorePaths = [];
+    protected array $ignoreNamespaces = [];
+    protected array $ignoreStrings = [];
+    protected array $ignorePatterns = [];
+    protected array $ignoreExtensions = [];
+
     protected FunctionPattern $functionPattern;
 
     protected PropertyPattern $propertyPattern;
@@ -42,8 +49,17 @@ class Finder
 
     public function __construct()
     {
-        $this->paths              = collect([]);
-        $this->defaultIgnorePaths = array_merge($this->defaultIgnorePaths, config('langfy.finder.ignore_paths', []));
+        $this->paths = collect([]);
+
+        // Load ignore configuration from new structure
+        $ignoreConfig = config('langfy.finder.ignore', []);
+
+        $this->ignoreFiles = $ignoreConfig['files'] ?? [];
+        $this->ignorePaths = array_merge($this->defaultIgnorePaths, $ignoreConfig['paths'] ?? []);
+        $this->ignoreNamespaces = $ignoreConfig['namespaces'] ?? [];
+        $this->ignoreStrings = $ignoreConfig['strings'] ?? [];
+        $this->ignorePatterns = $ignoreConfig['patterns'] ?? [];
+        $this->ignoreExtensions = array_merge($this->defaultIgnoreExtensions, $ignoreConfig['extensions'] ?? []);
 
         $this->functionPattern = new FunctionPattern();
         $this->propertyPattern = new PropertyPattern();
@@ -80,7 +96,7 @@ class Finder
             $paths = [$paths];
         }
 
-        $this->defaultIgnorePaths = array_merge($this->defaultIgnorePaths, $paths);
+        $this->ignorePaths = array_merge($this->ignorePaths, $paths);
 
         return $this;
     }
@@ -91,7 +107,51 @@ class Finder
             $extensions = [$extensions];
         }
 
-        $this->defaultIgnoreExtensions = array_merge($this->defaultIgnoreExtensions, $extensions);
+        $this->ignoreExtensions = array_merge($this->ignoreExtensions, $extensions);
+
+        return $this;
+    }
+
+    public function ignoreFiles(string | array $files): self
+    {
+        if (is_string($files)) {
+            $files = [$files];
+        }
+
+        $this->ignoreFiles = array_merge($this->ignoreFiles, $files);
+
+        return $this;
+    }
+
+    public function ignoreNamespaces(string | array $namespaces): self
+    {
+        if (is_string($namespaces)) {
+            $namespaces = [$namespaces];
+        }
+
+        $this->ignoreNamespaces = array_merge($this->ignoreNamespaces, $namespaces);
+
+        return $this;
+    }
+
+    public function ignoreStrings(string | array $strings): self
+    {
+        if (is_string($strings)) {
+            $strings = [$strings];
+        }
+
+        $this->ignoreStrings = array_merge($this->ignoreStrings, $strings);
+
+        return $this;
+    }
+
+    public function ignorePatterns(string | array $patterns): self
+    {
+        if (is_string($patterns)) {
+            $patterns = [$patterns];
+        }
+
+        $this->ignorePatterns = array_merge($this->ignorePatterns, $patterns);
 
         return $this;
     }
@@ -114,7 +174,7 @@ class Finder
             $finder = (new SymfonyFinder())
                 ->files()
                 ->in($path)
-                ->notPath($this->defaultIgnorePaths)
+                ->notPath($this->ignorePaths)
                 ->name(['*.php', '*.blade.php']);
 
             $totalFiles += iterator_count($finder);
@@ -129,11 +189,22 @@ class Finder
             $finder = (new SymfonyFinder())
                 ->files()
                 ->in($path)
-                ->notPath($this->defaultIgnorePaths)
+                ->notPath($this->ignorePaths)
                 ->name(['*.php', '*.blade.php']);
 
             foreach ($finder as $file) {
+                // Check if file should be ignored by filename
+                if ($this->shouldIgnoreFile($file->getFilename())) {
+                    continue;
+                }
+
                 $content = file_get_contents($file->getRealPath());
+
+                // Check if file should be ignored by namespace
+                if ($this->shouldIgnoreByNamespace($content)) {
+                    continue;
+                }
+
                 $strings = $this->findStringsInContent($content, $file->getExtension());
 
                 $results = array_merge($results, $strings);
@@ -153,13 +224,16 @@ class Finder
     {
         $strings = [];
 
-        if (filled($fileExtension) && in_array($fileExtension, $this->defaultIgnoreExtensions)) {
+        if (filled($fileExtension) && in_array($fileExtension, $this->ignoreExtensions)) {
             return $strings;
         }
 
         $strings = array_merge($strings, $this->findFunctionStrings($content));
         $strings = array_merge($strings, $this->findPropertyStrings($content));
         $strings = array_merge($strings, $this->findVariableStrings($content));
+
+        // Filter out ignored strings and patterns
+        $strings = $this->filterIgnoredStrings($strings);
 
         return array_unique($strings);
     }
@@ -295,5 +369,80 @@ class Finder
         $string = str_replace('\\\\', '\\', $string);
 
         return $string;
+    }
+
+    /**
+     * Check if a file should be ignored by filename.
+     */
+    protected function shouldIgnoreFile(string $filename): bool
+    {
+        if (blank($this->ignoreFiles)) {
+            return false;
+        }
+
+        return in_array($filename, $this->ignoreFiles);
+    }
+
+    /**
+     * Check if a file should be ignored by namespace.
+     */
+    protected function shouldIgnoreByNamespace(string $content): bool
+    {
+        if (blank($this->ignoreNamespaces)) {
+            return false;
+        }
+
+        // Extract namespace from content
+        if (preg_match('/namespace\s+([^;]+);/', $content, $matches)) {
+            $namespace = trim($matches[1]);
+
+            foreach ($this->ignoreNamespaces as $ignoreNamespace) {
+                // Check if the file namespace starts with any ignored namespace
+                if (str_starts_with($namespace, $ignoreNamespace)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Filter out ignored strings and patterns from the results.
+     */
+    protected function filterIgnoredStrings(array $strings): array
+    {
+        if (blank($strings)) {
+            return $strings;
+        }
+
+        return collect($strings)
+            ->filter(function (string $string): bool {
+                // Check if string is in ignore list
+                if (filled($this->ignoreStrings) && in_array($string, $this->ignoreStrings)) {
+                    return false;
+                }
+
+                // Check if string matches any ignore patterns
+                if (filled($this->ignorePatterns)) {
+                    foreach ($this->ignorePatterns as $pattern) {
+                        // Suppress errors and check for preg_match errors
+                        $result = @preg_match($pattern, $string);
+
+                        if ($result === false) {
+                            // Invalid regex pattern, skip it
+                            continue;
+                        }
+
+                        if ($result === 1) {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            })
+            ->values()
+            ->toArray();
     }
 }

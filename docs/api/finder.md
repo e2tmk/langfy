@@ -67,6 +67,76 @@ The `ignoreExtensions()` method allows you to specify file extensions to ignore 
 ```php
 $finder = Finder::in(base_path('app'))
     ->ignoreExtensions('log');
+
+// Multiple extensions
+$finder = Finder::in(base_path('app'))
+    ->ignoreExtensions(['json', 'md', 'log']);
+```
+
+### `ignoreFiles()`
+
+The `ignoreFiles()` method allows you to exclude specific filenames from being scanned.
+
+```php
+$finder = Finder::in(base_path('app'))
+    ->ignoreFiles('config.php');
+
+// Multiple files
+$finder = Finder::in(base_path('app'))
+    ->ignoreFiles(['config.php', 'bootstrap.php']);
+```
+
+### `ignoreNamespaces()`
+
+The `ignoreNamespaces()` method allows you to exclude PHP files by their namespace.
+
+```php
+$finder = Finder::in(base_path('app'))
+    ->ignoreNamespaces('App\\Tests');
+
+// Multiple namespaces
+$finder = Finder::in(base_path('app'))
+    ->ignoreNamespaces(['App\\Tests', 'Database\\']);
+```
+
+### `ignoreStrings()`
+
+The `ignoreStrings()` method allows you to exclude specific translatable strings from the results.
+
+```php
+$finder = Finder::in(base_path('app'))
+    ->ignoreStrings('debug');
+
+// Multiple strings
+$finder = Finder::in(base_path('app'))
+    ->ignoreStrings(['debug', 'test', 'temp']);
+```
+
+### `ignorePatterns()`
+
+The `ignorePatterns()` method allows you to exclude strings using regex patterns for flexible matching.
+
+```php
+$finder = Finder::in(base_path('app'))
+    ->ignorePatterns('/^test_/');
+
+// Multiple patterns
+$finder = Finder::in(base_path('app'))
+    ->ignorePatterns(['/^test_/', '/debug$/', '/temp\d+/']);
+```
+
+### Chaining Ignore Methods
+
+All ignore methods can be chained together for comprehensive filtering:
+
+```php
+$finder = Finder::in(base_path('app'))
+    ->ignore('vendor')
+    ->ignoreFiles(['config.php', 'bootstrap.php'])
+    ->ignoreNamespaces(['App\\Tests'])
+    ->ignoreStrings(['debug', 'test'])
+    ->ignorePatterns(['/^test_/', '/debug$/'])
+    ->ignoreExtensions(['json', 'md']);
 ```
 
 ### `run()`

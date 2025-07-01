@@ -336,6 +336,166 @@ describe('Configuration Integration', function (): void {
     });
 });
 
+describe('New Ignore Functionality', function (): void {
+    it('ignores specific files by filename', function (): void {
+        // Create test files
+        File::put($this->appDir . '/config.php', '<?php echo __("Config String");');
+        File::put($this->appDir . '/bootstrap.php', '<?php echo __("Bootstrap String");');
+        File::put($this->appDir . '/normal.php', '<?php echo __("Normal String");');
+
+        $finder = Finder::in($this->appDir)->ignoreFiles(['config.php', 'bootstrap.php']);
+        $result = $finder->run();
+
+        expect($result)->toContain('Normal String')
+            ->and($result)->not->toContain('Config String')
+            ->and($result)->not->toContain('Bootstrap String');
+    });
+
+    it('ignores files by namespace', function (): void {
+        // Create files with different namespaces
+        File::put($this->appDir . '/TestController.php', '<?php
+            namespace App\\Tests;
+            echo __("Test String");
+        ');
+
+        File::put($this->appDir . '/VendorController.php', '<?php
+            namespace Vendor\\Package;
+            echo __("Vendor String");
+        ');
+
+        File::put($this->appDir . '/AppController.php', '<?php
+            namespace App\\Http\\Controllers;
+            echo __("App String");
+        ');
+
+        $finder = Finder::in($this->appDir)->ignoreNamespaces(['App\\Tests', 'Vendor\\Package']);
+        $result = $finder->run();
+
+        expect($result)->toContain('App String')
+            ->and($result)->not->toContain('Test String')
+            ->and($result)->not->toContain('Vendor String');
+    });
+
+    it('ignores specific strings', function (): void {
+        File::put($this->appDir . '/test.php', '<?php
+            echo __("debug");
+            echo __("test");
+            echo __("Valid Message");
+            echo __("Another Valid Message");
+        ');
+
+        $finder = Finder::in($this->appDir)->ignoreStrings(['debug', 'test']);
+        $result = $finder->run();
+
+        expect($result)->toContain('Valid Message')
+            ->and($result)->toContain('Another Valid Message')
+            ->and($result)->not->toContain('debug')
+            ->and($result)->not->toContain('test');
+    });
+
+    it('ignores strings matching regex patterns', function (): void {
+        File::put($this->appDir . '/test.php', '<?php
+            echo __("test_something");
+            echo __("debug_mode");
+            echo __("something_debug");
+            echo __("Valid Message");
+            echo __("Another Valid Message");
+        ');
+
+        $finder = Finder::in($this->appDir)->ignorePatterns(['/^test_/', '/debug$/']);
+        $result = $finder->run();
+
+        expect($result)->toContain('Valid Message')
+            ->and($result)->toContain('Another Valid Message')
+            ->and($result)->not->toContain('test_something')
+            ->and($result)->not->toContain('something_debug')
+            ->and($result)->toContain('debug_mode'); // Should not match /debug$/ pattern
+    });
+
+    it('combines multiple ignore types', function (): void {
+        // Create test files
+        File::put($this->appDir . '/config.php', '<?php echo __("Config String");');
+
+        File::put($this->appDir . '/TestController.php', '<?php
+            namespace App\\Tests;
+            echo __("Test String");
+        ');
+
+        File::put($this->appDir . '/normal.php', '<?php
+            echo __("debug");
+            echo __("test_something");
+            echo __("Valid Message");
+        ');
+
+        $finder = Finder::in($this->appDir)
+            ->ignoreFiles(['config.php'])
+            ->ignoreNamespaces(['App\\Tests'])
+            ->ignoreStrings(['debug'])
+            ->ignorePatterns(['/^test_/']);
+
+        $result = $finder->run();
+
+        expect($result)->toContain('Valid Message')
+            ->and($result)->not->toContain('Config String')
+            ->and($result)->not->toContain('Test String')
+            ->and($result)->not->toContain('debug')
+            ->and($result)->not->toContain('test_something');
+    });
+
+    it('handles namespace matching with partial matches', function (): void {
+        File::put($this->appDir . '/TestController.php', '<?php
+            namespace App\\Tests\\Unit;
+            echo __("Unit Test String");
+        ');
+
+        File::put($this->appDir . '/FeatureController.php', '<?php
+            namespace App\\Tests\\Feature;
+            echo __("Feature Test String");
+        ');
+
+        File::put($this->appDir . '/AppController.php', '<?php
+            namespace App\\Http\\Controllers;
+            echo __("App String");
+        ');
+
+        $finder = Finder::in($this->appDir)->ignoreNamespaces(['App\\Tests']);
+        $result = $finder->run();
+
+        expect($result)->toContain('App String')
+            ->and($result)->not->toContain('Unit Test String')
+            ->and($result)->not->toContain('Feature Test String');
+    });
+
+    it('handles empty ignore configurations gracefully', function (): void {
+        File::put($this->appDir . '/test.php', '<?php echo __("Test String");');
+
+        $finder = Finder::in($this->appDir)
+            ->ignoreFiles([])
+            ->ignoreNamespaces([])
+            ->ignoreStrings([])
+            ->ignorePatterns([]);
+
+        $result = $finder->run();
+
+        expect($result)->toContain('Test String');
+    });
+
+    it('handles invalid regex patterns gracefully', function (): void {
+        File::put($this->appDir . '/test.php', '<?php echo __("Test String");');
+
+        // This should not throw an exception even with invalid regex
+        $finder = Finder::in($this->appDir)->ignorePatterns(['[invalid regex']);
+
+        try {
+            $result = $finder->run();
+            expect($result)->toContain('Test String');
+        } catch (Exception $e) {
+            // If an exception is thrown, let's see what it is
+            throw new Exception("Unexpected exception: " . get_class($e) . " - " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+        }
+    });
+});
+
 describe('Error Handling', function (): void {
     it('handles unreadable files gracefully', function (): void {
         // Create a file and make it unreadable (if possible on the system)

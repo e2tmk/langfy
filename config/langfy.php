@@ -57,19 +57,26 @@ return [
             base_path('database'),
         ],
 
-        'ignore_paths' => [
-            'packages',
-            'vendor',
-            'node_modules',
-            'storage',
-            'bootstrap/cache',
-        ],
-
-        'ignore_extensions' => [
-            'json',
-            'md',
-            'txt',
-            'log',
+        'ignore' => [
+            'files' => [],
+            'paths' => [
+                'packages',
+                'vendor',
+                'node_modules',
+                'storage',
+                'bootstrap/cache',
+            ],
+            'namespaces' => [],
+            'strings'    => [],
+            'patterns'   => [
+                '/^filament-/',
+            ],
+            'extensions' => [
+                'json',
+                'md',
+                'txt',
+                'log',
+            ],
         ],
     ],
 

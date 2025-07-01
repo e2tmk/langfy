@@ -32,7 +32,7 @@ public/
 lang/
 ```
 
-You may customize excluded paths in the `langfy.php` configuration file:
+You may customize excluded content in the `langfy.php` configuration file using the comprehensive ignore system:
 
 ```php
 <?php
@@ -41,8 +41,33 @@ return [
     'finder' => [
         // ...
 
-        'ignore_paths' => [
-            'my-custom-directory',
+        'ignore' => [
+            'paths' => [
+                'my-custom-directory',
+                'vendor',
+                'tests',
+            ],
+            'files' => [
+                'config.php',
+                'bootstrap.php',
+            ],
+            'namespaces' => [
+                'App\\Tests',
+                'Database\\',
+            ],
+            'strings' => [
+                'debug',
+                'test',
+            ],
+            'patterns' => [
+                '/^test_/',
+                '/debug$/',
+            ],
+            'extensions' => [
+                'json',
+                'md',
+                'log',
+            ],
         ],
 
         // ...
