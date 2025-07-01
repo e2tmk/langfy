@@ -32,7 +32,7 @@ public/
 lang/
 ```
 
-You may customize excluded paths in the `langfy.php` configuration file:
+You may customize excluded content in the `langfy.php` configuration file using the comprehensive ignore system:
 
 ```php
 <?php
@@ -41,8 +41,33 @@ return [
     'finder' => [
         // ...
 
-        'ignore_paths' => [
-            'my-custom-directory',
+        'ignore' => [
+            'paths' => [
+                'my-custom-directory',
+                'vendor',
+                'tests',
+            ],
+            'files' => [
+                'config.php',
+                'bootstrap.php',
+            ],
+            'namespaces' => [
+                'App\\Tests',
+                'Database\\',
+            ],
+            'strings' => [
+                'debug',
+                'test',
+            ],
+            'patterns' => [
+                '/^test_/',
+                '/debug$/',
+            ],
+            'extensions' => [
+                'json',
+                'md',
+                'log',
+            ],
         ],
 
         // ...
@@ -78,6 +103,30 @@ trans('You have :count messages', ['count' => $messageCount])
 // Variable parameters
 __('Hello :user', $translationParams)
 ```
+
+### Ignored Translation Function
+
+For cases where you want to use translation functions but don't want them to be discovered by the finder, use the `itrans()` function:
+
+```php
+// The finder will ignore this
+itrans('colors.zinc')
+
+// Perfect for PHP standard patterns or when you want manual control
+itrans('messages.temporary')
+itrans('debug.information')
+
+// Works exactly like __() but won't be found during scanning
+$message = itrans('user.welcome', ['name' => $user->name]);
+```
+
+**Use Cases for `itrans()`:**
+- **PHP standard patterns**: When using dot notation like `itrans('colors.zinc')`
+- **Temporary strings**: For debugging or temporary content
+- **Manual translation control**: When you want to handle translation discovery manually
+- **Dynamic keys**: When translation keys are built dynamically and shouldn't be auto-discovered
+
+The `itrans()` function accepts the same parameters as Laravel's `__()` function.
 
 ## Property Patterns
 
