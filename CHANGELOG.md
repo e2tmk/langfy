@@ -2,6 +2,14 @@
 
 All notable changes to `langfy` will be documented in this file.
 
+## v0.1.0 - 2025-07-01
+
+### What's Changed
+
+* feat(ignore): Add comprehensive ignore system to Finder by @andrefelipe18 in https://github.com/e2tmk/langfy/pull/5
+
+**Full Changelog**: https://github.com/e2tmk/langfy/compare/v0.0.3...v0.1.0
+
 ## v0.0.3 - 2025-06-30
 
 ### What's Changed
