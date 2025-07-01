@@ -400,15 +400,17 @@ describe('New Ignore Functionality', function (): void {
             echo __("something_debug");
             echo __("Valid Message");
             echo __("Another Valid Message");
+            echo __("filament-forms::test.string")
         ');
 
-        $finder = Finder::in($this->appDir)->ignorePatterns(['/^test_/', '/debug$/']);
+        $finder = Finder::in($this->appDir)->ignorePatterns(['/^test_/', '/debug$/', '/^filament-/']);
         $result = $finder->run();
 
         expect($result)->toContain('Valid Message')
             ->and($result)->toContain('Another Valid Message')
             ->and($result)->not->toContain('test_something')
             ->and($result)->not->toContain('something_debug')
+            ->and($result)->not->toContain('filament-forms::test.string')
             ->and($result)->toContain('debug_mode'); // Should not match /debug$/ pattern
     });
 
@@ -749,7 +751,7 @@ describe('JSON File Saving', function (): void {
     it('merges with existing JSON file content correctly', function (): void {
         $filePath = $this->testDir . '/existing-translations.json';
 
-        // Create initial file with some content
+        // Create an initial file with some content
         $initialContent = [
             'Hello' => 'Olá',
             'World' => 'Mundo',
