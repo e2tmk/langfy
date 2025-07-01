@@ -5,9 +5,10 @@
         "dev": "vite",
         "build": "vite build"
     },
-    "dependencies": {},
+    "dependencies": {
+        "@tailwindcss/forms": "^0.5.10"
+    },
     "devDependencies": {
-    "@tailwindcss/forms": "^0.5.10",
     "laravel-vite-plugin": "^1.3.0",
     "tailwindcss": "^4.1.11",
     "vite": "^7.0.0"
