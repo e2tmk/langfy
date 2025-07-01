@@ -36,7 +36,7 @@ return [
     | the translation service will create translations for.
     |
     */
-    'to_language' => [
+    'to_languages' => [
         'es_ES', // Spanish (Spain)
         'pt_BR', // Portuguese (Brazil)
     ],
