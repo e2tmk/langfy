@@ -116,16 +116,7 @@ class Langfy
     /** Get all strings from an specific language file (translated and untranslated). */
     public function getAllStringsFor(string $language): array
     {
-        $filePath = $this->getLanguageFilePath($language);
-
-        if (! file_exists($filePath)) {
-            return [];
-        }
-
-        return rescue(
-            fn (): mixed => json_decode(file_get_contents($filePath), true),
-            []
-        ) ?? [];
+        return $this->getAllStringsForLanguage($language);
     }
 
     /** Perform all configured operations. */
@@ -230,6 +221,21 @@ class Langfy
 
                 return [$toLanguage => $translations];
             })->toArray();
+    }
+
+    /** Get all strings for an Language file. */
+    protected function getAllStringsForLanguage(string $language): array
+    {
+        $filePath = $this->getLanguageFilePath($language);
+
+        if (! file_exists($filePath)) {
+            return [];
+        }
+
+        return rescue(
+            fn (): mixed => json_decode(file_get_contents($filePath), true),
+            []
+        ) ?? [];
     }
 
     /** Get untranslated strings for a specific target language. */
