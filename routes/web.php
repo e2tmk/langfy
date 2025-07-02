@@ -7,4 +7,6 @@ namespace Routes;
 use Illuminate\Support\Facades\Route;
 use Langfy\Livewire\LangfyView;
 
-Route::get('/langfy', LangfyView::class);
+Route::middleware(['web'])->group(function () {
+    Route::get('/langfy', LangfyView::class);
+});
