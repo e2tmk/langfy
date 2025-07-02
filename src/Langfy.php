@@ -107,6 +107,27 @@ class Langfy
         return $this->getNewStrings();
     }
 
+    /** Get all target languages from config file. */
+    public function getLanguages(): array
+    {
+        return $this->getTargetLanguages();
+    }
+
+    /** Get all strings from an specific language file (translated and untranslated). */
+    public function getAllStringsFor(string $language): array
+    {
+        $filePath = $this->getLanguageFilePath($language);
+
+        if (! file_exists($filePath)) {
+            return [];
+        }
+
+        return rescue(
+            fn (): mixed => json_decode(file_get_contents($filePath), true),
+            []
+        ) ?? [];
+    }
+
     /** Perform all configured operations. */
     public function perform(): array
     {
