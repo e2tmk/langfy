@@ -336,6 +336,168 @@ describe('Configuration Integration', function (): void {
     });
 });
 
+describe('New Ignore Functionality', function (): void {
+    it('ignores specific files by filename', function (): void {
+        // Create test files
+        File::put($this->appDir . '/config.php', '<?php echo __("Config String");');
+        File::put($this->appDir . '/bootstrap.php', '<?php echo __("Bootstrap String");');
+        File::put($this->appDir . '/normal.php', '<?php echo __("Normal String");');
+
+        $finder = Finder::in($this->appDir)->ignoreFiles(['config.php', 'bootstrap.php']);
+        $result = $finder->run();
+
+        expect($result)->toContain('Normal String')
+            ->and($result)->not->toContain('Config String')
+            ->and($result)->not->toContain('Bootstrap String');
+    });
+
+    it('ignores files by namespace', function (): void {
+        // Create files with different namespaces
+        File::put($this->appDir . '/TestController.php', '<?php
+            namespace App\\Tests;
+            echo __("Test String");
+        ');
+
+        File::put($this->appDir . '/VendorController.php', '<?php
+            namespace Vendor\\Package;
+            echo __("Vendor String");
+        ');
+
+        File::put($this->appDir . '/AppController.php', '<?php
+            namespace App\\Http\\Controllers;
+            echo __("App String");
+        ');
+
+        $finder = Finder::in($this->appDir)->ignoreNamespaces(['App\\Tests', 'Vendor\\Package']);
+        $result = $finder->run();
+
+        expect($result)->toContain('App String')
+            ->and($result)->not->toContain('Test String')
+            ->and($result)->not->toContain('Vendor String');
+    });
+
+    it('ignores specific strings', function (): void {
+        File::put($this->appDir . '/test.php', '<?php
+            echo __("debug");
+            echo __("test");
+            echo __("Valid Message");
+            echo __("Another Valid Message");
+        ');
+
+        $finder = Finder::in($this->appDir)->ignoreStrings(['debug', 'test']);
+        $result = $finder->run();
+
+        expect($result)->toContain('Valid Message')
+            ->and($result)->toContain('Another Valid Message')
+            ->and($result)->not->toContain('debug')
+            ->and($result)->not->toContain('test');
+    });
+
+    it('ignores strings matching regex patterns', function (): void {
+        File::put($this->appDir . '/test.php', '<?php
+            echo __("test_something");
+            echo __("debug_mode");
+            echo __("something_debug");
+            echo __("Valid Message");
+            echo __("Another Valid Message");
+            echo __("filament-forms::test.string")
+        ');
+
+        $finder = Finder::in($this->appDir)->ignorePatterns(['/^test_/', '/debug$/', '/^filament-/']);
+        $result = $finder->run();
+
+        expect($result)->toContain('Valid Message')
+            ->and($result)->toContain('Another Valid Message')
+            ->and($result)->not->toContain('test_something')
+            ->and($result)->not->toContain('something_debug')
+            ->and($result)->not->toContain('filament-forms::test.string')
+            ->and($result)->toContain('debug_mode'); // Should not match /debug$/ pattern
+    });
+
+    it('combines multiple ignore types', function (): void {
+        // Create test files
+        File::put($this->appDir . '/config.php', '<?php echo __("Config String");');
+
+        File::put($this->appDir . '/TestController.php', '<?php
+            namespace App\\Tests;
+            echo __("Test String");
+        ');
+
+        File::put($this->appDir . '/normal.php', '<?php
+            echo __("debug");
+            echo __("test_something");
+            echo __("Valid Message");
+        ');
+
+        $finder = Finder::in($this->appDir)
+            ->ignoreFiles(['config.php'])
+            ->ignoreNamespaces(['App\\Tests'])
+            ->ignoreStrings(['debug'])
+            ->ignorePatterns(['/^test_/']);
+
+        $result = $finder->run();
+
+        expect($result)->toContain('Valid Message')
+            ->and($result)->not->toContain('Config String')
+            ->and($result)->not->toContain('Test String')
+            ->and($result)->not->toContain('debug')
+            ->and($result)->not->toContain('test_something');
+    });
+
+    it('handles namespace matching with partial matches', function (): void {
+        File::put($this->appDir . '/TestController.php', '<?php
+            namespace App\\Tests\\Unit;
+            echo __("Unit Test String");
+        ');
+
+        File::put($this->appDir . '/FeatureController.php', '<?php
+            namespace App\\Tests\\Feature;
+            echo __("Feature Test String");
+        ');
+
+        File::put($this->appDir . '/AppController.php', '<?php
+            namespace App\\Http\\Controllers;
+            echo __("App String");
+        ');
+
+        $finder = Finder::in($this->appDir)->ignoreNamespaces(['App\\Tests']);
+        $result = $finder->run();
+
+        expect($result)->toContain('App String')
+            ->and($result)->not->toContain('Unit Test String')
+            ->and($result)->not->toContain('Feature Test String');
+    });
+
+    it('handles empty ignore configurations gracefully', function (): void {
+        File::put($this->appDir . '/test.php', '<?php echo __("Test String");');
+
+        $finder = Finder::in($this->appDir)
+            ->ignoreFiles([])
+            ->ignoreNamespaces([])
+            ->ignoreStrings([])
+            ->ignorePatterns([]);
+
+        $result = $finder->run();
+
+        expect($result)->toContain('Test String');
+    });
+
+    it('handles invalid regex patterns gracefully', function (): void {
+        File::put($this->appDir . '/test.php', '<?php echo __("Test String");');
+
+        // This should not throw an exception even with invalid regex
+        $finder = Finder::in($this->appDir)->ignorePatterns(['[invalid regex']);
+
+        try {
+            $result = $finder->run();
+            expect($result)->toContain('Test String');
+        } catch (Exception $e) {
+            // If an exception is thrown, let's see what it is
+            throw new Exception("Unexpected exception: " . get_class($e) . " - " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+        }
+    });
+});
+
 describe('Error Handling', function (): void {
     it('handles unreadable files gracefully', function (): void {
         // Create a file and make it unreadable (if possible on the system)
@@ -427,5 +589,222 @@ describe('Real-world Scenarios', function (): void {
             ->and($result)->toContain('Welcome, :name!')
             ->and($result)->toContain('Users')
             ->and($result)->toContain('Total users: :count');
+    });
+});
+
+describe('Complex String Patterns', function (): void {
+    it('handles strings with nested parentheses correctly', function (): void {
+        $phpContent = '<?php
+                class TestController {
+                    public function index() {
+                        return __("Schedule First Appointment (\"Coming soon\")");
+                    }
+
+                    public function show() {
+                        return trans("User profile (active)");
+                    }
+
+                    public function edit() {
+                        return __("Edit user (ID: 123)");
+                    }
+                }
+            ';
+
+        File::put($this->appDir . '/ComplexStrings.php', $phpContent);
+
+        $finder = Finder::in($this->appDir);
+        $result = $finder->run();
+
+        expect($result)->toContain('Schedule First Appointment ("Coming soon")')
+            ->and($result)->toContain('User profile (active)')
+            ->and($result)->toContain('Edit user (ID: 123)');
+    });
+
+    it('handles strings with escaped quotes correctly', function (): void {
+        $phpContent = '<?php
+                class TestController {
+                    public function index() {
+                        return __("My Test \'Hello\'");
+                    }
+
+                    public function show() {
+                        return trans("Say \"Hello World\"");
+                    }
+
+                    public function edit() {
+                        return __("Mixed \'quotes\' and \"quotes\"");
+                    }
+                }
+            ';
+
+        File::put($this->appDir . '/EscapedQuotes.php', $phpContent);
+
+        $finder = Finder::in($this->appDir);
+        $result = $finder->run();
+
+        expect($result)->toContain('My Test \'Hello\'')
+            ->and($result)->toContain('Say "Hello World"')
+            ->and($result)->toContain('Mixed \'quotes\' and "quotes"');
+    });
+
+    it('handles complex nested structures', function (): void {
+        $phpContent = '<?php
+                class TestController {
+                    public function complex() {
+                        return __("Complex (nested \"quotes\" and \'more\') string");
+                    }
+
+                    public function withParameters() {
+                        return trans("User (:name) has (:count) items", ["name" => $name, "count" => $count]);
+                    }
+                }
+            ';
+
+        File::put($this->appDir . '/ComplexNested.php', $phpContent);
+
+        $finder = Finder::in($this->appDir);
+        $result = $finder->run();
+
+        expect($result)->toContain('Complex (nested "quotes" and \'more\') string')
+            ->and($result)->toContain('User (:name) has (:count) items');
+    });
+
+    it('handles blade templates with complex strings', function (): void {
+        $bladeContent = '
+                <div>
+                    <h1>{{ __("Welcome (\"Guest User\")") }}</h1>
+                    <p>{{ trans("Status: (Active)") }}</p>
+                    <span>{{ __("Message with \'quotes\' inside") }}</span>
+                </div>
+            ';
+
+        File::put($this->resourcesDir . '/complex.blade.php', $bladeContent);
+
+        $finder = Finder::in($this->resourcesDir);
+        $result = $finder->run();
+
+        expect($result)->toContain('Welcome ("Guest User")')
+            ->and($result)->toContain('Status: (Active)')
+            ->and($result)->toContain('Message with \'quotes\' inside');
+    });
+});
+
+describe('JSON File Saving', function (): void {
+    it('saves strings with escaped quotes correctly to JSON file', function (): void {
+        $strings = [
+            'My Test \'Hello\'',
+            'Say "Hello World"',
+            'Mixed \'quotes\' and "quotes"',
+            'Schedule First Appointment ("Coming soon")',
+            'Complex (nested "quotes" and \'more\') string',
+        ];
+
+        $filePath = $this->testDir . '/test-strings.json';
+
+        $utils = new Langfy\Helpers\Utils;
+        $utils->saveStringsToFile($strings, $filePath);
+
+        expect(File::exists($filePath))->toBeTrue();
+
+        $savedContent   = File::get($filePath);
+        $decodedContent = json_decode($savedContent, true);
+
+        expect($decodedContent)->toBeArray()
+            ->and($decodedContent)->toHaveKey('My Test \'Hello\'')
+            ->and($decodedContent)->toHaveKey('Say "Hello World"')
+            ->and($decodedContent)->toHaveKey('Mixed \'quotes\' and "quotes"')
+            ->and($decodedContent)->toHaveKey('Schedule First Appointment ("Coming soon")')
+            ->and($decodedContent)->toHaveKey('Complex (nested "quotes" and \'more\') string')
+            ->and($decodedContent['My Test \'Hello\''])->toBe('My Test \'Hello\'')
+            ->and($decodedContent['Say "Hello World"'])->toBe('Say "Hello World"')
+            ->and($decodedContent['Mixed \'quotes\' and "quotes"'])->toBe('Mixed \'quotes\' and "quotes"')
+            ->and($decodedContent['Schedule First Appointment ("Coming soon")'])->toBe('Schedule First Appointment ("Coming soon")')
+            ->and($decodedContent['Complex (nested "quotes" and \'more\') string'])->toBe('Complex (nested "quotes" and \'more\') string');
+    });
+
+    it('handles key-value pairs with complex strings correctly', function (): void {
+        $strings = [
+            'My Test \'Hello\''                          => 'Meu Teste \'Olá\'',
+            'Say "Hello World"'                          => 'Diga "Olá Mundo"',
+            'Schedule First Appointment ("Coming soon")' => 'Agendar Primeiro Compromisso ("Em breve")',
+        ];
+
+        $filePath = $this->testDir . '/test-translations.json';
+
+        $utils = new Langfy\Helpers\Utils;
+        $utils->saveStringsToFile($strings, $filePath);
+
+        expect(File::exists($filePath))->toBeTrue();
+
+        $savedContent   = File::get($filePath);
+        $decodedContent = json_decode($savedContent, true);
+
+        expect($decodedContent)->toBeArray()
+            ->and($decodedContent)->toHaveKey('My Test \'Hello\'')
+            ->and($decodedContent)->toHaveKey('Say "Hello World"')
+            ->and($decodedContent)->toHaveKey('Schedule First Appointment ("Coming soon")')
+            ->and($decodedContent['My Test \'Hello\''])->toBe('Meu Teste \'Olá\'')
+            ->and($decodedContent['Say "Hello World"'])->toBe('Diga "Olá Mundo"')
+            ->and($decodedContent['Schedule First Appointment ("Coming soon")'])->toBe('Agendar Primeiro Compromisso ("Em breve")');
+    });
+
+    it('merges with existing JSON file content correctly', function (): void {
+        $filePath = $this->testDir . '/existing-translations.json';
+
+        // Create an initial file with some content
+        $initialContent = [
+            'Hello' => 'Olá',
+            'World' => 'Mundo',
+        ];
+        File::put($filePath, json_encode($initialContent, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+        // Add new strings with complex quotes
+        $newStrings = [
+            'My Test \'Hello\'' => 'Meu Teste \'Olá\'',
+            'Say "Hello World"' => 'Diga "Olá Mundo"',
+        ];
+
+        $utils = new Langfy\Helpers\Utils;
+        $utils->saveStringsToFile($newStrings, $filePath);
+
+        $savedContent   = File::get($filePath);
+        $decodedContent = json_decode($savedContent, true);
+
+        // Should contain both original and new content
+        expect($decodedContent)->toBeArray()
+            ->and($decodedContent)->toHaveKey('Hello')
+            ->and($decodedContent)->toHaveKey('World')
+            ->and($decodedContent)->toHaveKey('My Test \'Hello\'')
+            ->and($decodedContent)->toHaveKey('Say "Hello World"')
+            ->and($decodedContent['Hello'])->toBe('Olá')
+            ->and($decodedContent['World'])->toBe('Mundo')
+            ->and($decodedContent['My Test \'Hello\''])->toBe('Meu Teste \'Olá\'')
+            ->and($decodedContent['Say "Hello World"'])->toBe('Diga "Olá Mundo"');
+    });
+
+    it('handles JSON encoding with proper escaping', function (): void {
+        $strings = [
+            'String with backslash \\',
+            'String with newline \n',
+            'String with tab \t',
+            'String with unicode 🚀',
+        ];
+
+        $filePath = $this->testDir . '/special-chars.json';
+
+        $utils = new Langfy\Helpers\Utils;
+        $utils->saveStringsToFile($strings, $filePath);
+
+        expect(File::exists($filePath))->toBeTrue();
+
+        $savedContent   = File::get($filePath);
+        $decodedContent = json_decode($savedContent, true);
+
+        expect($decodedContent)->toBeArray()
+            ->and($decodedContent)->toHaveKey('String with backslash \\')
+            ->and($decodedContent)->toHaveKey('String with newline \n')
+            ->and($decodedContent)->toHaveKey('String with tab \t')
+            ->and($decodedContent)->toHaveKey('String with unicode 🚀')
+            ->and($decodedContent['String with unicode 🚀'])->toBe('String with unicode 🚀');
     });
 });

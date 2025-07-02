@@ -25,6 +25,7 @@ class LangfyServiceProvider extends PackageServiceProvider
             ->hasCommands([
                 FinderCommand::class,
                 TransCommand::class,
+                TranslateChunkCommand::class,
             ]);
     }
 }
