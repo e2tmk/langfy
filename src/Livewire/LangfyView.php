@@ -39,6 +39,15 @@ class LangfyView extends Component
             ->getLanguages();
     }
 
+    public function reloadStrings(): void
+    {
+        if (blank($this->activeLanguage)) {
+            return;
+        }
+
+        $this->loadStrings();
+    }
+
     public function loadStrings(): void
     {
         if (blank($this->activeLanguage)) {
@@ -50,7 +59,8 @@ class LangfyView extends Component
         $result = Langfy::for(Context::Application)
             ->getAllStringsFor($this->activeLanguage);
 
-        dump($result);
+        $this->translations = collect($result)
+            ->toArray();
     }
 
     public function render()
