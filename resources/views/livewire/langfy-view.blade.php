@@ -33,6 +33,56 @@
             </div>
         </div>
 
+        <!-- Context and Module Selection -->
+        <div class="mb-6">
+            <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4">
+                <div class="flex items-center space-x-4">
+                    <!-- Context Selection -->
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            Context
+                        </label>
+                        <select wire:model.live="activeContext" class="w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 shadow-sm focus:border-violet-500 focus:ring-violet-500">
+                            <option value="application">Application</option>
+                            @if(filled($availableModules))
+                                <option value="module">Module</option>
+                            @endif
+                        </select>
+                    </div>
+
+                    <!-- Module Selection (only shown when context is module) -->
+                    @if($activeContext === 'module' && filled($availableModules))
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Module
+                            </label>
+                            <select wire:model.live="activeModule" class="w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 shadow-sm focus:border-violet-500 focus:ring-violet-500">
+                                @foreach($availableModules as $module)
+                                    <option value="{{ $module }}">{{ $module }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
+
+                    <!-- Current Selection Display -->
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            Current Target
+                        </label>
+                        <div class="px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-md border border-slate-200 dark:border-slate-600">
+                            <span class="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                @if($activeContext === 'application')
+                                    Application
+                                @else
+                                    Module: {{ $activeModule }}
+                                @endif
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Language Tabs -->
         @if (filled($availableLanguages))
             <div class="mb-6">
@@ -50,82 +100,93 @@
                         </x-slot:header>
 
                         <div class="overflow-x-auto">
-                            <table class="w-full">
-                                <thead class="bg-slate-50 dark:bg-slate-800">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                        Key
-                                    </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                        Value
-                                    </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                        Module
-                                    </th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                        Actions
-                                    </th>
-                                </tr>
-                                </thead>
-                                <tbody class="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-700">
-                                @foreach ($translations as $key => $translation)
-                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm font-mono text-slate-900 dark:text-slate-100 break-all">
-                                                {{ $key }}
+                            <x-table :headers="[
+                                    ['index' => 'key', 'label' => 'Key'],
+                                    ['index' => 'value', 'label' => 'Value'],
+                                    ['index' => 'module', 'label' => 'Module'],
+                                    ['index' => 'action'],
+                                ]"
+                                     :rows="$translations"
+                            >
+                                @interact('column_value', $row)
+                                    @if($this->editingKey === $row['key'])
+                                        <div class="flex items-center space-x-2 min-w-0">
+                                            <div class="flex-1 min-w-0">
+                                                <textarea
+                                                    wire:model.live="editingValue"
+                                                    wire:keydown.enter="saveEdit"
+                                                    wire:keydown.escape="cancelEdit"
+                                                    wire:keydown.ctrl.enter="saveEdit"
+                                                    rows="2"
+                                                    class="w-full text-sm rounded-md border-violet-300 dark:border-violet-600 dark:bg-slate-700 dark:text-slate-300 focus:border-violet-500 focus:ring-violet-500 resize-none"
+                                                    placeholder="Enter translation..."
+                                                    x-data
+                                                    x-init="$el.focus(); $el.select()"
+                                                ></textarea>
                                             </div>
-                                        </td>
-                                        <td class="px-6 py-4">
-{{--                                            @if ($editingKey === $translation['key'])--}}
-{{--                                                <div class="flex items-center space-x-2">--}}
-{{--                                                    <x-input--}}
-{{--                                                        wire:model="editingValue"--}}
-{{--                                                        class="flex-1"--}}
-{{--                                                        wire:keydown.enter="saveEdit"--}}
-{{--                                                        wire:keydown.escape="cancelEdit"--}}
-{{--                                                    />--}}
-{{--                                                    <x-button--}}
-{{--                                                        color="green"--}}
-{{--                                                        size="sm"--}}
-{{--                                                        icon="check"--}}
-{{--                                                        wire:click="saveEdit"--}}
-{{--                                                    />--}}
-{{--                                                    <x-button--}}
-{{--                                                        color="red"--}}
-{{--                                                        size="sm"--}}
-{{--                                                        icon="x-mark"--}}
-{{--                                                        wire:click="cancelEdit"--}}
-{{--                                                    />--}}
-{{--                                                </div>--}}
-{{--                                            @else--}}
-{{--                                                <div class="text-sm text-slate-900 dark:text-slate-100">--}}
-{{--                                                    {{ $translation }}--}}
-{{--                                                </div>--}}
-{{--                                            @endif--}}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-{{--                                            @if ($translation['module'])--}}
-{{--                                                <x-badge color="violet" size="sm" :text="$translation['module']" />--}}
-{{--                                            @else--}}
-{{--                                                <span class="text-xs text-slate-400 dark:text-slate-500">App</span>--}}
-{{--                                            @endif--}}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right">
-{{--                                            @if ($editingKey !== $translation['key'])--}}
-{{--                                                <x-button--}}
-{{--                                                    color="slate"--}}
-{{--                                                    size="sm"--}}
-{{--                                                    icon="pencil"--}}
-{{--                                                    wire:click="startEdit('{{ $translation['key'] }}', '{{ addslashes($translation['value']) }}')"--}}
-{{--                                                >--}}
-{{--                                                    Edit--}}
-{{--                                                </x-button>--}}
-{{--                                            @endif--}}
-                                        </td>
-                                    </tr>
-                                @endforeach
-                                </tbody>
-                            </table>
+                                            <div class="flex items-center space-x-1 flex-shrink-0">
+                                                <button
+                                                    wire:click="saveEdit"
+                                                    type="button"
+                                                    class="inline-flex items-center p-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
+                                                    title="Save (Enter or Ctrl+Enter)"
+                                                >
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    wire:click="cancelEdit"
+                                                    type="button"
+                                                    class="inline-flex items-center p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                                    title="Cancel (Escape)"
+                                                >
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <div class="flex items-center justify-between group min-w-0">
+                                            <div class="flex-1 min-w-0">
+                                                <span class="text-sm text-slate-900 dark:text-slate-100 break-words">
+                                                    {{ $row['value'] ?: '-' }}
+                                                </span>
+                                            </div>
+                                            <button
+                                                wire:click="startEdit('{{ $row['key'] }}', '{{ addslashes($row['value']) }}')"
+                                                type="button"
+                                                class="ml-2 p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+                                                title="Edit translation"
+                                            >
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    @endif
+                                @endinteract
+
+                                @interact('column_action', $row)
+                                    @if($this->editingKey === $row['key'])
+                                        <div class="flex items-center space-x-1">
+                                            <span class="text-xs text-slate-500 dark:text-slate-400">
+                                                Enter/Ctrl+Enter to save, Esc to cancel
+                                            </span>
+                                        </div>
+                                    @else
+                                        <x-button
+                                            wire:click="startEdit('{{ $row['key'] }}', '{{ addslashes($row['value']) }}')"
+                                            icon="pencil-square"
+                                            text="Edit"
+                                            color="violet"
+                                            size="sm"
+                                            flat
+                                        />
+                                    @endif
+                                @endinteract
+                            </x-table>
                         </div>
                     @elseif ($activeLanguage && blank($translations) && !$isInitializing)
                         <div class="text-center py-12">
