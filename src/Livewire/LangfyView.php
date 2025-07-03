@@ -8,9 +8,12 @@ use Langfy\Enums\Context;
 use Langfy\Helpers\Utils;
 use Langfy\Langfy;
 use Livewire\Component;
+use TallStackUi\Traits\Interactions;
 
 class LangfyView extends Component
 {
+    use Interactions;
+
     public string $activeLanguage = '';
 
     public string $activeContext = 'application';
@@ -28,6 +31,7 @@ class LangfyView extends Component
     public array $translations = [];
 
     public string $editingKey = '';
+
     public string $editingValue = '';
 
     protected function rules()
@@ -52,13 +56,12 @@ class LangfyView extends Component
 
     public function loadAvailableModules(): void
     {
-        $utils = new Utils();
-        $this->availableModules = $utils->availableModules();
+        $this->availableModules = (new Utils)->availableModules();
     }
 
     public function loadAvailableLanguages(): void
     {
-        $context = $this->activeContext === 'application' ? Context::Application : Context::Module;
+        $context    = $this->activeContext === 'application' ? Context::Application : Context::Module;
         $moduleName = $this->activeContext === 'module' ? $this->activeModule : null;
 
         $this->availableLanguages = Langfy::for($context, $moduleName)
@@ -99,24 +102,25 @@ class LangfyView extends Component
     {
         if (blank($this->activeLanguage)) {
             $this->translations = [];
+
             return;
         }
 
-        $context = $this->activeContext === 'application' ? Context::Application : Context::Module;
+        $context    = $this->activeContext === 'application' ? Context::Application : Context::Module;
         $moduleName = $this->activeContext === 'module' ? $this->activeModule : null;
 
-        $result = Langfy::for($context, $moduleName)
+        $allStrings = Langfy::for($context, $moduleName)
             ->getAllStringsFor($this->activeLanguage);
 
-        // Transform the data to include module information
-        $this->translations = collect($result)
+        $this->translations = collect($allStrings)
             ->map(function ($value, $key) use ($moduleName) {
                 return [
-                    'key' => $key,
-                    'value' => $value,
+                    'key'    => $key,
+                    'value'  => $value,
                     'module' => $moduleName,
                 ];
             })
+            ->values()
             ->toArray();
     }
 
@@ -125,10 +129,10 @@ class LangfyView extends Component
         $this->isInitializing = true;
 
         try {
-            $context = $this->activeContext === 'application' ? Context::Application : Context::Module;
+            $context    = $this->activeContext === 'application' ? Context::Application : Context::Module;
             $moduleName = $this->activeContext === 'module' ? $this->activeModule : null;
 
-            Langfy::for($context, $moduleName)
+            $result = Langfy::for($context, $moduleName)
                 ->finder()
                 ->save()
                 ->perform();
@@ -136,45 +140,37 @@ class LangfyView extends Component
             $this->loadAvailableLanguages();
             $this->loadStrings();
 
-            $this->dispatch('notify', [
-                'type' => 'success',
-                'message' => 'Strings refreshed successfully!'
-            ]);
+            $this->notify('success', "Encontrado {$result['found_strings']} strings");
         } catch (\Exception $e) {
-            $this->dispatch('notify', [
-                'type' => 'error',
-                'message' => 'Error refreshing strings: ' . $e->getMessage()
-            ]);
+            $this->notify('error', "Error refreshing strings: {$e->getMessage()}");
         } finally {
             $this->isInitializing = false;
         }
     }
 
-    public function translateMissingStrings(): void
+    public function translateMissingStrings(bool $allLanguages = false): void
     {
         $this->isTranslating = true;
 
         try {
-            $context = $this->activeContext === 'application' ? Context::Application : Context::Module;
+            $context    = $this->activeContext === 'application' ? Context::Application : Context::Module;
             $moduleName = $this->activeContext === 'module' ? $this->activeModule : null;
 
             $result = Langfy::for($context, $moduleName)
-                ->translate()
+                ->finder()
+                ->save()
+                ->translate(to: $allLanguages ? $this->availableLanguages : $this->activeLanguage)
+                ->async()
                 ->perform();
 
             $this->loadStrings();
 
-            $translationCount = collect($result['translations'] ?? [])->sum(fn($lang) => count($lang));
+            $translationCount = collect($result['translations'] ?? [])->sum(fn ($lang) => count($lang));
 
-            $this->dispatch('notify', [
-                'type' => 'success',
-                'message' => "Successfully translated {$translationCount} strings!"
-            ]);
+            $this->notify('success', "Successfully translated {$translationCount} strings!");
         } catch (\Exception $e) {
-            $this->dispatch('notify', [
-                'type' => 'error',
-                'message' => 'Error translating strings: ' . $e->getMessage()
-            ]);
+            dump($e->getMessage(), [$e->getTrace()]);
+            $this->notify('error', 'Error translating strings: ' . $e->getMessage());
         } finally {
             $this->isTranslating = false;
         }
@@ -182,7 +178,7 @@ class LangfyView extends Component
 
     protected function getLanguageFilePath(Langfy $langfy, string $language): string
     {
-        $context = $this->activeContext === 'application' ? Context::Application : Context::Module;
+        $context    = $this->activeContext === 'application' ? Context::Application : Context::Module;
         $moduleName = $this->activeContext === 'module' ? $this->activeModule : null;
 
         if ($context === Context::Application) {
@@ -190,8 +186,9 @@ class LangfyView extends Component
         }
 
         if ($context === Context::Module && filled($moduleName)) {
-            $utils = new Utils();
+            $utils      = new Utils;
             $modulePath = $utils->modulePath($moduleName);
+
             return $modulePath . '/lang/' . $language . '.json';
         }
 
@@ -206,8 +203,8 @@ class LangfyView extends Component
 
     public function startEdit($key, $value)
     {
-        $this->editingKey = $key;
-        $this->editingValue = $value;
+        $this->editingKey   = $key;
+        $this->editingValue = $value ?? '';
         $this->resetErrorBag();
     }
 
@@ -218,19 +215,19 @@ class LangfyView extends Component
         try {
             $this->updateTranslationFile($this->editingKey, $this->editingValue);
 
-            $this->translations = $this->translations->map(function ($item) {
-                if ($item['key'] === $this->editingKey) {
-                    $item['value'] = $this->editingValue;
-                }
-                return $item;
-            });
+            $this->translations = collect($this->translations)
+                ->map(function ($item) {
+                    if ($item['key'] === $this->editingKey) {
+                        $item['value'] = $this->editingValue;
+                    }
+
+                    return $item;
+                })
+                ->toArray();
 
             $this->cancelEdit();
 
-            $this->dispatch('translation-updated', [
-                'message' => 'Translation updated successfully!'
-            ]);
-
+            $this->notify('success', 'Translation updated successfully!');
         } catch (\Exception $e) {
             $this->addError('editingValue', 'Failed to update translation: ' . $e->getMessage());
         }
@@ -238,7 +235,7 @@ class LangfyView extends Component
 
     public function cancelEdit()
     {
-        $this->editingKey = '';
+        $this->editingKey   = '';
         $this->editingValue = '';
         $this->resetErrorBag();
     }
@@ -247,36 +244,60 @@ class LangfyView extends Component
     {
         $filePath = $this->getTranslationFilePath();
 
-        if (!file_exists($filePath)) {
-            throw new \Exception('Translation file not found');
+        if (! file_exists($filePath)) {
+            $this->createTranslationFile($filePath);
         }
 
-        $translations = include $filePath;
+        $translations = [];
 
-        // Atualizar o valor (suporta dot notation)
-        if (strpos($key, '.') !== false) {
-            $keys = explode('.', $key);
-            $temp = &$translations;
+        if (str_ends_with($filePath, '.json')) {
+            $content      = file_get_contents($filePath);
+            $translations = json_decode($content, true) ?? [];
 
-            foreach ($keys as $k) {
-                if (!isset($temp[$k])) {
-                    $temp[$k] = [];
-                }
-                $temp = &$temp[$k];
-            }
-            $temp = $value;
-        } else {
             $translations[$key] = $value;
+
+            file_put_contents($filePath, json_encode($translations, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        } else {
+            $translations = include $filePath;
+
+            if (strpos($key, '.') !== false) {
+                $keys = explode('.', $key);
+                $temp = &$translations;
+
+                foreach ($keys as $k) {
+                    if (! isset($temp[$k])) {
+                        $temp[$k] = [];
+                    }
+                    $temp = &$temp[$k];
+                }
+                $temp = $value;
+            } else {
+                $translations[$key] = $value;
+            }
+
+            $content = "<?php\n\nreturn " . $this->arrayToString($translations) . ";\n";
+            file_put_contents($filePath, $content);
+        }
+    }
+
+    private function createTranslationFile($filePath)
+    {
+        $directory = dirname($filePath);
+
+        if (! is_dir($directory)) {
+            mkdir($directory, 0755, true);
         }
 
-        // Salvar o arquivo com formatação adequada
-        $content = "<?php\n\nreturn " . $this->arrayToString($translations) . ";\n";
-        file_put_contents($filePath, $content);
+        if (str_ends_with($filePath, '.json')) {
+            file_put_contents($filePath, '{}');
+        } else {
+            file_put_contents($filePath, "<?php\n\nreturn [];\n");
+        }
     }
 
     private function arrayToString($array, $indent = 0)
     {
-        $result = "[\n";
+        $result  = "[\n";
         $spacing = str_repeat('    ', $indent + 1);
 
         foreach ($array as $key => $value) {
@@ -291,7 +312,8 @@ class LangfyView extends Component
             $result .= ",\n";
         }
 
-        $result .= str_repeat('    ', $indent) . "]";
+        $result .= str_repeat('    ', $indent) . ']';
+
         return $result;
     }
 
@@ -307,5 +329,16 @@ class LangfyView extends Component
     public function updatedEditingValue()
     {
         $this->validateOnly('editingValue');
+    }
+
+    public function notify(string $type, string $message): void
+    {
+        match ($type) {
+            'success' => $this->toast()->success($message)->send(),
+            'error' => $this->toast()->error($message)->send(),
+            'warning' => $this->toast()->warning($message)->send(),
+            'info' => $this->toast()->info($message)->send(),
+            default => $this->toast()->success($message)->send(),
+        };
     }
 }

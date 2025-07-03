@@ -1,20 +1,31 @@
 <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
     <div class="container mx-auto px-4 py-8">
+        <x-toast />
+
         <!-- Header -->
         <div class="mb-8">
             <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
-                        Translation Management
-                    </h1>
-                    <p class="text-slate-600 dark:text-slate-400">
-                        Manage and translate your application strings with AI-powered assistance
-                    </p>
+                <div class="flex items-center space-x-4">
+                    <div class="flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" viewBox="0 0 24 24" class="text-dark-950 dark:text-white">
+                            <path fill="currentColor" d="M19 16v1h-5v-1h1v-2h3v2zm3-11v1h-1v1h-1v1h-2V7h-1V6h-1V5h2V4h-1V3h-1V2h3v1h1v2z"/>
+                            <path fill="currentColor" d="M22 10V9H11v1h-1v12h1v1h11v-1h1V10zm-1 11h-2v-3h-5v3h-2v-5h1v-2h1v-1h1v-1h1v-1h1v1h1v1h1v1h1v2h1zM7 7v1H6v1H4V7z"/>
+                            <path fill="currentColor" d="M14 2v6h-2V6h-1V5H9v1H8V4h4V3H3v1h4v2H6V5H4v1H3v4h1v1h2v-1h1v3h1V8h1V7h2v1h-1v1H9v6H2v-1H1V2h1V1h11v1zM6 19v1h1v1h1v1H5v-1H4v-2H2v-1h1v-1h1v-1h2v1h1v1h1v1z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+                            Langfy Translation Management
+                        </h1>
+                        <p class="text-slate-600 dark:text-slate-400">
+                            Manage and translate your application strings with AI-powered assistance
+                        </p>
+                    </div>
                 </div>
                 <div class="flex items-center space-x-2">
                     <x-button
                         color="slate"
-                        wire:click="reloadStrings"
+                        wire:click="refreshStrings"
                         :loading="$isInitializing"
                         icon="arrow-path"
                         size="sm"
@@ -23,7 +34,7 @@
                     </x-button>
                     <x-button
                         color="violet"
-                        wire:click="translateMissingStrings"
+                        wire:click="translateMissingStrings(true)"
                         :loading="$isTranslating"
                         icon="sparkles"
                     >
@@ -33,60 +44,64 @@
             </div>
         </div>
 
-        <!-- Context and Module Selection -->
-        <div class="mb-6">
-            <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4">
-                <div class="flex items-center space-x-4">
-                    <!-- Context Selection -->
-                    <div class="flex-1">
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                            Context
-                        </label>
-                        <select wire:model.live="activeContext" class="w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 shadow-sm focus:border-violet-500 focus:ring-violet-500">
-                            <option value="application">Application</option>
-                            @if(filled($availableModules))
-                                <option value="module">Module</option>
-                            @endif
-                        </select>
-                    </div>
+{{--        <!-- Context and Module Selection -->--}}
+{{--        <div class="mb-6">--}}
+{{--            <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4">--}}
+{{--                <div class="flex items-center space-x-4">--}}
+{{--                    <!-- Context Selection -->--}}
+{{--                    <div class="flex-1">--}}
+{{--                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">--}}
+{{--                            Context--}}
+{{--                        </label>--}}
+{{--                        <select wire:model.live="activeContext" class="w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 shadow-sm focus:border-violet-500 focus:ring-violet-500">--}}
+{{--                            <option value="application">Application</option>--}}
+{{--                            @if(filled($availableModules))--}}
+{{--                                <option value="module">Module</option>--}}
+{{--                            @endif--}}
+{{--                        </select>--}}
+{{--                    </div>--}}
 
-                    <!-- Module Selection (only shown when context is module) -->
-                    @if($activeContext === 'module' && filled($availableModules))
-                        <div class="flex-1">
-                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                Module
-                            </label>
-                            <select wire:model.live="activeModule" class="w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 shadow-sm focus:border-violet-500 focus:ring-violet-500">
-                                @foreach($availableModules as $module)
-                                    <option value="{{ $module }}">{{ $module }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    @endif
+{{--                    <!-- Module Selection (only shown when context is module) -->--}}
+{{--                    @if($activeContext === 'module' && filled($availableModules))--}}
+{{--                        <div class="flex-1">--}}
+{{--                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">--}}
+{{--                                Module--}}
+{{--                            </label>--}}
+{{--                            <select wire:model.live="activeModule" class="w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 shadow-sm focus:border-violet-500 focus:ring-violet-500">--}}
+{{--                                @foreach($availableModules as $module)--}}
+{{--                                    <option value="{{ $module }}">{{ $module }}</option>--}}
+{{--                                @endforeach--}}
+{{--                            </select>--}}
+{{--                        </div>--}}
+{{--                    @endif--}}
 
-                    <!-- Current Selection Display -->
-                    <div class="flex-1">
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                            Current Target
-                        </label>
-                        <div class="px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-md border border-slate-200 dark:border-slate-600">
-                            <span class="text-sm font-medium text-slate-900 dark:text-slate-100">
-                                @if($activeContext === 'application')
-                                    Application
-                                @else
-                                    Module: {{ $activeModule }}
-                                @endif
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+{{--                    <!-- Current Selection Display -->--}}
+{{--                    <div class="flex-1">--}}
+{{--                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">--}}
+{{--                            Current Target--}}
+{{--                        </label>--}}
+{{--                        <div class="px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-md border border-slate-200 dark:border-slate-600">--}}
+{{--                            <span class="text-sm font-medium text-slate-900 dark:text-slate-100">--}}
+{{--                                @if($activeContext === 'application')--}}
+{{--                                    Application--}}
+{{--                                @else--}}
+{{--                                    Module: {{ $activeModule }}--}}
+{{--                                @endif--}}
+{{--                            </span>--}}
+{{--                        </div>--}}
+{{--                    </div>--}}
+{{--                </div>--}}
+{{--            </div>--}}
+{{--        </div>--}}
+
+        <div>
+            <x-progress :percent="50" />
         </div>
 
         <!-- Language Tabs -->
         @if (filled($availableLanguages))
-            <div class="mb-6">
-                <x-tab wire:model.live="activeLanguage" x-on:navigate="$wire.reloadStrings()">
+            <div class="my-8">
+                <x-tab wire:model.live="activeLanguage">
                     @foreach ($availableLanguages as $key => $language)
                         <x-tab.items tab="{{ $language }}" />
                     @endforeach
@@ -112,58 +127,41 @@
                                     @if($this->editingKey === $row['key'])
                                         <div class="flex items-center space-x-2 min-w-0">
                                             <div class="flex-1 min-w-0">
-                                                <textarea
+                                                <x-input
                                                     wire:model.live="editingValue"
                                                     wire:keydown.enter="saveEdit"
                                                     wire:keydown.escape="cancelEdit"
                                                     wire:keydown.ctrl.enter="saveEdit"
-                                                    rows="2"
-                                                    class="w-full text-sm rounded-md border-violet-300 dark:border-violet-600 dark:bg-slate-700 dark:text-slate-300 focus:border-violet-500 focus:ring-violet-500 resize-none"
-                                                    placeholder="Enter translation..."
                                                     x-data
                                                     x-init="$el.focus(); $el.select()"
-                                                ></textarea>
+                                                />
                                             </div>
                                             <div class="flex items-center space-x-1 flex-shrink-0">
-                                                <button
+                                                <x-button
                                                     wire:click="saveEdit"
-                                                    type="button"
-                                                    class="inline-flex items-center p-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
-                                                    title="Save (Enter or Ctrl+Enter)"
-                                                >
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                                    </svg>
-                                                </button>
-                                                <button
+                                                    icon="check"
+                                                    color="green"
+                                                    loading
+                                                    flat
+                                                    md
+                                                />
+                                                <x-button
                                                     wire:click="cancelEdit"
-                                                    type="button"
-                                                    class="inline-flex items-center p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                                                    title="Cancel (Escape)"
-                                                >
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                    </svg>
-                                                </button>
+                                                    icon="x-mark"
+                                                    color="red"
+                                                    loading
+                                                    flat
+                                                    md
+                                                />
                                             </div>
                                         </div>
                                     @else
-                                        <div class="flex items-center justify-between group min-w-0">
+                                        <div wire:click="startEdit('{{ $row['key'] }}', {{ json_encode($row['value']) }})" class="flex items-center justify-between group min-w-0">
                                             <div class="flex-1 min-w-0">
                                                 <span class="text-sm text-slate-900 dark:text-slate-100 break-words">
                                                     {{ $row['value'] ?: '-' }}
                                                 </span>
                                             </div>
-                                            <button
-                                                wire:click="startEdit('{{ $row['key'] }}', '{{ addslashes($row['value']) }}')"
-                                                type="button"
-                                                class="ml-2 p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
-                                                title="Edit translation"
-                                            >
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                                </svg>
-                                            </button>
                                         </div>
                                     @endif
                                 @endinteract
@@ -177,33 +175,31 @@
                                         </div>
                                     @else
                                         <x-button
-                                            wire:click="startEdit('{{ $row['key'] }}', '{{ addslashes($row['value']) }}')"
+                                            wire:click="startEdit('{{ $row['key'] }}', {{ json_encode($row['value']) }})"
                                             icon="pencil-square"
                                             text="Edit"
                                             color="violet"
                                             size="sm"
                                             flat
                                         />
-                                    @endif
+                                   @endif
                                 @endinteract
                             </x-table>
                         </div>
                     @elseif ($activeLanguage && blank($translations) && !$isInitializing)
                         <div class="text-center py-12">
                             <div class="text-slate-400 dark:text-slate-500 mb-4">
-                                <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
+                                <x-icon name="language" class="mx-auto h-10 w-10"/>
                             </div>
                             <h3 class="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
                                 No translations found
                             </h3>
                             <p class="text-slate-500 dark:text-slate-400 mb-4">
-                                No translations found for {{ strtoupper($activeLanguage) }}. Use the Auto Translate button to generate translations.
+                                No translations found for <x-badge text="{{strtoupper($activeLanguage)}}" color="violet" outline sm/>. Use the Auto Translate button to generate translations.
                             </p>
                             <x-button
                                 color="violet"
-                                wire:click="translateMissingStrings"
+                                wire:click="translateMissingStrings(false)"
                                 :loading="$isTranslating"
                                 icon="sparkles"
                             >
