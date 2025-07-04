@@ -24,6 +24,8 @@ class LangfyView extends Component
 
     public bool $isTranslating = false;
 
+    public int $translationProgress = 0;
+
     public array $availableLanguages = [];
 
     public array $availableModules = [];
@@ -150,7 +152,8 @@ class LangfyView extends Component
 
     public function translateMissingStrings(bool $allLanguages = false): void
     {
-        $this->isTranslating = true;
+        $this->isTranslating       = true;
+        $this->translationProgress = 1;
 
         try {
             $context    = $this->activeContext === 'application' ? Context::Application : Context::Module;
@@ -160,6 +163,10 @@ class LangfyView extends Component
                 ->finder()
                 ->save()
                 ->translate(to: $allLanguages ? $this->availableLanguages : $this->activeLanguage)
+                ->onTranslateProgress(function ($current, $total, $extraData) {
+                    dump($current, $total, $extraData);
+                    $this->translationProgress = $total > 0 ? (int) round(($current / $total) * 100) : 0;
+                })
                 ->async()
                 ->perform();
 
@@ -169,10 +176,10 @@ class LangfyView extends Component
 
             $this->notify('success', "Successfully translated {$translationCount} strings!");
         } catch (\Exception $e) {
-            dump($e->getMessage(), [$e->getTrace()]);
             $this->notify('error', 'Error translating strings: ' . $e->getMessage());
         } finally {
-            $this->isTranslating = false;
+            $this->isTranslating       = false;
+            $this->translationProgress = 0;
         }
     }
 
@@ -185,7 +192,7 @@ class LangfyView extends Component
             return lang_path() . '/' . $language . '.json';
         }
 
-        if ($context === Context::Module && filled($moduleName)) {
+        if (filled($moduleName)) {
             $utils      = new Utils;
             $modulePath = $utils->modulePath($moduleName);
 
@@ -201,14 +208,14 @@ class LangfyView extends Component
             ->layout('langfy::components.layouts.app');
     }
 
-    public function startEdit($key, $value)
+    public function startEdit($key, $value): void
     {
         $this->editingKey   = $key;
         $this->editingValue = $value ?? '';
         $this->resetErrorBag();
     }
 
-    public function saveEdit()
+    public function saveEdit(): void
     {
         $this->validate();
 
@@ -233,14 +240,14 @@ class LangfyView extends Component
         }
     }
 
-    public function cancelEdit()
+    public function cancelEdit(): void
     {
         $this->editingKey   = '';
         $this->editingValue = '';
         $this->resetErrorBag();
     }
 
-    private function updateTranslationFile($key, $value)
+    private function updateTranslationFile($key, $value): void
     {
         $filePath = $this->getTranslationFilePath();
 
@@ -260,7 +267,7 @@ class LangfyView extends Component
         } else {
             $translations = include $filePath;
 
-            if (strpos($key, '.') !== false) {
+            if (str_contains($key, '.')) {
                 $keys = explode('.', $key);
                 $temp = &$translations;
 
@@ -280,7 +287,7 @@ class LangfyView extends Component
         }
     }
 
-    private function createTranslationFile($filePath)
+    private function createTranslationFile($filePath): void
     {
         $directory = dirname($filePath);
 
@@ -295,7 +302,7 @@ class LangfyView extends Component
         }
     }
 
-    private function arrayToString($array, $indent = 0)
+    private function arrayToString($array, $indent = 0): string
     {
         $result  = "[\n";
         $spacing = str_repeat('    ', $indent + 1);
@@ -317,7 +324,7 @@ class LangfyView extends Component
         return $result;
     }
 
-    private function getTranslationFilePath()
+    private function getTranslationFilePath(): string
     {
         if ($this->activeContext === 'module' && $this->activeModule) {
             return base_path("Modules/{$this->activeModule}/lang/{$this->activeLanguage}.php");
@@ -326,7 +333,7 @@ class LangfyView extends Component
         return lang_path("{$this->activeLanguage}.php");
     }
 
-    public function updatedEditingValue()
+    public function updatedEditingValue(): void
     {
         $this->validateOnly('editingValue');
     }
@@ -334,11 +341,10 @@ class LangfyView extends Component
     public function notify(string $type, string $message): void
     {
         match ($type) {
-            'success' => $this->toast()->success($message)->send(),
-            'error' => $this->toast()->error($message)->send(),
+            'error'   => $this->toast()->error($message)->send(),
             'warning' => $this->toast()->warning($message)->send(),
-            'info' => $this->toast()->info($message)->send(),
-            default => $this->toast()->success($message)->send(),
+            'info'    => $this->toast()->info($message)->send(),
+            default   => $this->toast()->success($message)->send(),
         };
     }
 }

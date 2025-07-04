@@ -45,57 +45,44 @@
         </div>
 
 {{--        <!-- Context and Module Selection -->--}}
-{{--        <div class="mb-6">--}}
-{{--            <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4">--}}
-{{--                <div class="flex items-center space-x-4">--}}
-{{--                    <!-- Context Selection -->--}}
-{{--                    <div class="flex-1">--}}
-{{--                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">--}}
-{{--                            Context--}}
-{{--                        </label>--}}
-{{--                        <select wire:model.live="activeContext" class="w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 shadow-sm focus:border-violet-500 focus:ring-violet-500">--}}
-{{--                            <option value="application">Application</option>--}}
-{{--                            @if(filled($availableModules))--}}
-{{--                                <option value="module">Module</option>--}}
-{{--                            @endif--}}
-{{--                        </select>--}}
-{{--                    </div>--}}
+        <x-card class="mb-6">
+            <div class="flex items-center space-x-4">
+                <!-- Context Selection -->
+                <div class="flex-1">
+                    <x-select.styled
+                        label="Context"
+                        :options="$this->contextOptions"
+                        wire:model="activeContext"
+                    />
+                </div>
 
-{{--                    <!-- Module Selection (only shown when context is module) -->--}}
-{{--                    @if($activeContext === 'module' && filled($availableModules))--}}
-{{--                        <div class="flex-1">--}}
-{{--                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">--}}
-{{--                                Module--}}
-{{--                            </label>--}}
-{{--                            <select wire:model.live="activeModule" class="w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 shadow-sm focus:border-violet-500 focus:ring-violet-500">--}}
-{{--                                @foreach($availableModules as $module)--}}
-{{--                                    <option value="{{ $module }}">{{ $module }}</option>--}}
-{{--                                @endforeach--}}
-{{--                            </select>--}}
-{{--                        </div>--}}
-{{--                    @endif--}}
+                <!-- Module Selection -->
+                @if($this->shouldShowModuleSelection())
+                    <div class="flex-1">
+                        <x-select.styled
+                            label="Module"
+                            :options="$this->moduleOptions"
+                            wire:model.live="activeModule"
+                        />
+                    </div>
+                @endif
 
-{{--                    <!-- Current Selection Display -->--}}
-{{--                    <div class="flex-1">--}}
-{{--                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">--}}
-{{--                            Current Target--}}
-{{--                        </label>--}}
-{{--                        <div class="px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-md border border-slate-200 dark:border-slate-600">--}}
-{{--                            <span class="text-sm font-medium text-slate-900 dark:text-slate-100">--}}
-{{--                                @if($activeContext === 'application')--}}
-{{--                                    Application--}}
-{{--                                @else--}}
-{{--                                    Module: {{ $activeModule }}--}}
-{{--                                @endif--}}
-{{--                            </span>--}}
-{{--                        </div>--}}
-{{--                    </div>--}}
-{{--                </div>--}}
-{{--            </div>--}}
-{{--        </div>--}}
+                <!-- Current Selection Display -->
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        Current Target
+                    </label>
+                    <div class="px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-md border border-slate-200 dark:border-slate-600">
+                        <span class="text-sm font-medium text-slate-900 dark:text-slate-100">
+                            {{ $this->getCurrentTargetDisplay() }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </x-card>
 
-        <div>
-            <x-progress :percent="50" />
+        <div wire:show="isTranslating">
+            <x-progress percent="{{$translationProgress}}" />
         </div>
 
         <!-- Language Tabs -->
