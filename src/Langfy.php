@@ -284,7 +284,7 @@ class Langfy
             return is_array($this->translateTo) ? $this->translateTo : [$this->translateTo];
         }
 
-        return config()->array('langfy.to_languages');
+        return config()->array('langfy.to_language');
     }
 
     /** Get new strings that don't exist in the language file. */
