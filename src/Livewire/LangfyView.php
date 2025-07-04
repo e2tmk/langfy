@@ -171,15 +171,18 @@ class LangfyView extends Component
         try {
             [$context, $moduleName] = $this->getContextAndModule();
 
+            $this->toast()
+                ->persistent()
+                ->info(__('Translation process is running asynchronously. Don\'t forget to run the queue worker!'))
+                ->confirm(__('Confirm'))
+                ->send();
+
             $result = Langfy::for($context, $moduleName)
                 ->finder()
                 ->save()
+                ->async()
                 ->translate(to: $allLanguages ? $this->availableLanguages : $this->activeLanguage)
                 ->perform();
-
-            $translationCount = collect($result['translations'] ?? [])->sum(fn ($lang) => count($lang));
-
-            $this->notify('success', __('Successfully translated :count strings!', ['count' => $translationCount]));
         } catch (\Exception $e) {
             $this->notify('error', __('Error translating strings: :message', ['message' => $e->getMessage()]));
         } finally {
