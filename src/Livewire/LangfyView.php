@@ -62,8 +62,7 @@ class LangfyView extends Component
 
     public function loadAvailableLanguages(): void
     {
-        $context    = $this->activeContext === 'application' ? Context::Application : Context::Module;
-        $moduleName = $this->activeContext === 'module' ? $this->activeModule : null;
+        [$context, $moduleName] = $this->getContextAndModule();
 
         $this->availableLanguages = Langfy::for($context, $moduleName)
             ->getLanguages();
@@ -71,11 +70,11 @@ class LangfyView extends Component
 
     public function updatedActiveContext(): void
     {
-        if ($this->activeContext === 'module' && blank($this->activeModule) && filled($this->availableModules)) {
+        if ($this->activeContext === Context::Module->value && blank($this->activeModule) && filled($this->availableModules)) {
             $this->activeModule = array_values($this->availableModules)[0];
         }
 
-        if ($this->activeContext === 'application') {
+        if ($this->activeContext === Context::Application->value) {
             $this->activeModule = '';
         }
 
@@ -111,8 +110,7 @@ class LangfyView extends Component
             return;
         }
 
-        $context    = $this->activeContext === 'application' ? Context::Application : Context::Module;
-        $moduleName = $this->activeContext === 'module' ? $this->activeModule : null;
+        [$context, $moduleName] = $this->getContextAndModule();
 
         $strings = Langfy::for($context, $moduleName)
             ->getStrings();
@@ -139,8 +137,7 @@ class LangfyView extends Component
         $this->isInitializing = true;
 
         try {
-            $context    = $this->activeContext === 'application' ? Context::Application : Context::Module;
-            $moduleName = $this->activeContext === 'module' ? $this->activeModule : null;
+            [$context, $moduleName] = $this->getContextAndModule();
 
             Langfy::for($context, $moduleName)
                 ->finder()
@@ -162,8 +159,7 @@ class LangfyView extends Component
         $this->translationProgress = 1;
 
         try {
-            $context    = $this->activeContext === 'application' ? Context::Application : Context::Module;
-            $moduleName = $this->activeContext === 'module' ? $this->activeModule : null;
+            [$context, $moduleName] = $this->getContextAndModule();
 
             $result = Langfy::for($context, $moduleName)
                 ->finder()
@@ -236,8 +232,7 @@ class LangfyView extends Component
 
     private function getTranslationFilePath(): string
     {
-        $context    = $this->activeContext === 'application' ? Context::Application : Context::Module;
-        $moduleName = $this->activeContext === 'module' ? $this->activeModule : null;
+        [$context, $moduleName] = $this->getContextAndModule();
 
         return Langfy::for($context, $moduleName)
             ->getLanguageFilePath($this->activeLanguage);
@@ -256,6 +251,14 @@ class LangfyView extends Component
             'info'    => $this->toast()->info($message)->send(),
             default   => $this->toast()->success($message)->send(),
         };
+    }
+
+    private function getContextAndModule(): array
+    {
+        $context = $this->activeContext === Context::Application->value ? Context::Application : Context::Module;
+        $moduleName = $this->activeContext === Context::Module->value ? $this->activeModule : null;
+
+        return [$context, $moduleName];
     }
 
     private const CONTEXT_OPTIONS = [
@@ -284,6 +287,6 @@ class LangfyView extends Component
 
     public function shouldShowModuleSelection(): bool
     {
-        return $this->activeContext === 'module' && filled($this->availableModules);
+        return $this->activeContext === Context::Module->value && filled($this->availableModules);
     }
 }

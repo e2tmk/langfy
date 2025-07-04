@@ -101,65 +101,65 @@
                                      :rows="$translations"
                             >
                                 @interact('column_value', $row)
-                                    @if($this->editingKey === $row['key'])
-                                        <div class="flex items-center space-x-2 min-w-0">
-                                            <div class="flex-1 min-w-0">
-                                                <x-input
-                                                    wire:model.live="editingValue"
-                                                    wire:keydown.enter="saveEdit"
-                                                    wire:keydown.escape="cancelEdit"
-                                                    wire:keydown.ctrl.enter="saveEdit"
-                                                    x-data
-                                                    x-init="$el.focus(); $el.select()"
-                                                />
-                                            </div>
-                                            <div class="flex items-center space-x-1 flex-shrink-0">
-                                                <x-button
-                                                    wire:click="saveEdit"
-                                                    icon="check"
-                                                    color="green"
-                                                    loading
-                                                    flat
-                                                    md
-                                                />
-                                                <x-button
-                                                    wire:click="cancelEdit"
-                                                    icon="x-mark"
-                                                    color="red"
-                                                    loading
-                                                    flat
-                                                    md
-                                                />
-                                            </div>
+                                @if($this->editingKey === $row['key'])
+                                    <div class="flex items-center space-x-2 min-w-0">
+                                        <div class="flex-1 min-w-0">
+                                            <x-input
+                                                wire:model.live="editingValue"
+                                                wire:keydown.enter="saveEdit"
+                                                wire:keydown.escape="cancelEdit"
+                                                wire:keydown.ctrl.enter="saveEdit"
+                                                x-data
+                                                x-init="$el.focus(); $el.select()"
+                                            />
                                         </div>
-                                    @else
-                                        <div wire:click="startEdit('{{ $row['key'] }}', {{ json_encode($row['value']) }})" class="flex items-center justify-between group min-w-0">
-                                            <div class="flex-1 min-w-0">
+                                        <div class="flex items-center space-x-1 flex-shrink-0">
+                                            <x-button
+                                                wire:click="saveEdit"
+                                                icon="check"
+                                                color="green"
+                                                loading
+                                                flat
+                                                md
+                                            />
+                                            <x-button
+                                                wire:click="cancelEdit"
+                                                icon="x-mark"
+                                                color="red"
+                                                loading
+                                                flat
+                                                md
+                                            />
+                                        </div>
+                                    </div>
+                                @else
+                                    <div wire:click="startEdit('{{ $row['key'] }}', {{ json_encode($row['value']) }})" class="flex items-center justify-between group min-w-0">
+                                        <div class="flex-1 min-w-0">
                                                 <span class="text-sm text-slate-900 dark:text-slate-100 break-words">
                                                     {{ $row['value'] ?: '-' }}
                                                 </span>
-                                            </div>
                                         </div>
-                                    @endif
+                                    </div>
+                                @endif
                                 @endinteract
 
                                 @interact('column_action', $row)
-                                    @if($this->editingKey === $row['key'])
-                                        <div class="flex items-center space-x-1">
+                                @if($this->editingKey === $row['key'])
+                                    <div class="flex items-center space-x-1">
                                             <span class="text-xs text-slate-500 dark:text-slate-400">
                                                 Enter/Ctrl+Enter to save, Esc to cancel
                                             </span>
-                                        </div>
-                                    @else
-                                        <x-button
-                                            wire:click="startEdit('{{ $row['key'] }}', {{ json_encode($row['value']) }})"
-                                            icon="pencil-square"
-                                            text="Edit"
-                                            color="violet"
-                                            size="sm"
-                                            flat
-                                        />
-                                   @endif
+                                    </div>
+                                @else
+                                    <x-button
+                                        wire:click="startEdit('{{ $row['key'] }}', {{ json_encode($row['value']) }})"
+                                        icon="pencil-square"
+                                        text="Edit"
+                                        color="violet"
+                                        size="sm"
+                                        flat
+                                    />
+                                @endif
                                 @endinteract
                             </x-table>
                         </div>
