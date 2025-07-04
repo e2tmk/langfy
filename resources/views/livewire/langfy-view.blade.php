@@ -44,42 +44,32 @@
             </div>
         </div>
 
-{{--        <!-- Context and Module Selection -->--}}
-        <x-card class="mb-6">
-            <div class="flex items-center space-x-4">
-                <!-- Context Selection -->
-                <div class="flex-1">
-                    <x-select.styled
-                        label="Context"
-                        :options="$this->contextOptions"
-                        wire:model="activeContext"
-                    />
-                </div>
-
-                <!-- Module Selection -->
-                @if($this->shouldShowModuleSelection())
-                    <div class="flex-1">
+        <!-- Context and Module Selection -->
+        <div class="mb-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <!-- Context Selection -->
+                    <div class="w-40">
                         <x-select.styled
-                            label="Module"
-                            :options="$this->moduleOptions"
-                            wire:model.live="activeModule"
+                            :options="$this->contextOptions"
+                            wire:model.live="activeContext"
+                            placeholder="Select context"
                         />
                     </div>
-                @endif
 
-                <!-- Current Selection Display -->
-                <div class="flex-1">
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        Current Target
-                    </label>
-                    <div class="px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-md border border-slate-200 dark:border-slate-600">
-                        <span class="text-sm font-medium text-slate-900 dark:text-slate-100">
-                            {{ $this->getCurrentTargetDisplay() }}
-                        </span>
-                    </div>
+                    <!-- Module Selection -->
+                    @if($this->shouldShowModuleSelection())
+                        <div class="w-40">
+                            <x-select.styled
+                                :options="$this->moduleOptions"
+                                wire:model.live="activeModule"
+                                placeholder="Select module"
+                            />
+                        </div>
+                    @endif
                 </div>
             </div>
-        </x-card>
+        </div>
 
         <div wire:show="isTranslating">
             <x-progress percent="{{$translationProgress}}" />

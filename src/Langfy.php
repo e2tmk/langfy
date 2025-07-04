@@ -260,7 +260,7 @@ class Langfy
     }
 
     /** Get the language file path. */
-    protected function getLanguageFilePath(?string $language = null): string
+    public function getLanguageFilePath(?string $language = null): string
     {
         $language ??= config('langfy.from_language', 'en');
 
