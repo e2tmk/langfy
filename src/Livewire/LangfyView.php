@@ -132,6 +132,16 @@ class LangfyView extends Component
             ->toArray();
     }
 
+    public function notify(string $type, string $message): void
+    {
+        match ($type) {
+            'error'   => $this->toast()->error($message)->send(),
+            'warning' => $this->toast()->warning($message)->send(),
+            'info'    => $this->toast()->info($message)->send(),
+            default   => $this->toast()->success($message)->send(),
+        };
+    }
+
     public function refreshStrings(): void
     {
         $this->isInitializing = true;
@@ -147,7 +157,7 @@ class LangfyView extends Component
             $this->loadAvailableLanguages();
             $this->loadStrings();
         } catch (\Exception $e) {
-            $this->notify('error', "Error refreshing strings: {$e->getMessage()}");
+            $this->notify('error', __('Error refreshing strings: :message', ['message' => $e->getMessage()]));
         } finally {
             $this->isInitializing = false;
         }
@@ -169,9 +179,9 @@ class LangfyView extends Component
 
             $translationCount = collect($result['translations'] ?? [])->sum(fn ($lang) => count($lang));
 
-            $this->notify('success', "Successfully translated {$translationCount} strings!");
+            $this->notify('success', __('Successfully translated :count strings!', ['count' => $translationCount]));
         } catch (\Exception $e) {
-            $this->notify('error', 'Error translating strings: ' . $e->getMessage());
+            $this->notify('error', __('Error translating strings: :message', ['message' => $e->getMessage()]));
         } finally {
             $this->isTranslating       = false;
             $this->translationProgress = 0;
@@ -210,9 +220,9 @@ class LangfyView extends Component
 
             $this->cancelEdit();
 
-            $this->notify('success', 'Translation updated successfully!');
+            $this->notify('success', __('Translation updated successfully!'));
         } catch (\Exception $e) {
-            $this->addError('editingValue', 'Failed to update translation: ' . $e->getMessage());
+            $this->addError('editingValue', __('Failed to update translation: :message', ['message' => $e->getMessage()]));
         }
     }
 
@@ -243,16 +253,6 @@ class LangfyView extends Component
         $this->validateOnly('editingValue');
     }
 
-    public function notify(string $type, string $message): void
-    {
-        match ($type) {
-            'error'   => $this->toast()->error($message)->send(),
-            'warning' => $this->toast()->warning($message)->send(),
-            'info'    => $this->toast()->info($message)->send(),
-            default   => $this->toast()->success($message)->send(),
-        };
-    }
-
     private function getContextAndModule(): array
     {
         $context = $this->activeContext === Context::Application->value ? Context::Application : Context::Module;
@@ -261,21 +261,21 @@ class LangfyView extends Component
         return [$context, $moduleName];
     }
 
-    private const CONTEXT_OPTIONS = [
-        ['label' => 'Application', 'value' => Context::Application->value],
-        ['label' => 'Module', 'value' => Context::Module->value],
-    ];
-
     public function getContextOptionsProperty(): array
     {
+        $baseOptions = [
+            ['label' => __('Application'), 'value' => Context::Application->value],
+            ['label' => __('Module'), 'value' => Context::Module->value],
+        ];
+
         if (empty($this->availableModules)) {
-            return collect(self::CONTEXT_OPTIONS)
+            return collect($baseOptions)
                 ->where('value', Context::Application->value)
                 ->values()
                 ->toArray();
         }
 
-        return self::CONTEXT_OPTIONS;
+        return $baseOptions;
     }
 
     public function getModuleOptionsProperty(): array

@@ -20,6 +20,7 @@ class LangfyServiceProvider extends PackageServiceProvider
             ->name('langfy')
             ->hasConfigFile()
             ->hasViews()
+            ->hasTranslations()
             ->hasAssets()
             ->hasRoutes(['web'])
             ->hasCommands([

@@ -15,10 +15,10 @@
                     </div>
                     <div>
                         <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
-                            Langfy Translation Management
+                            {{ __('Langfy Translation Management') }}
                         </h1>
                         <p class="text-slate-600 dark:text-slate-400">
-                            Manage and translate your application strings with AI-powered assistance
+                            {{ __('Manage and translate your application strings with AI-powered assistance') }}
                         </p>
                     </div>
                 </div>
@@ -30,7 +30,7 @@
                         icon="arrow-path"
                         size="sm"
                     >
-                        Refresh
+                        {{ __('Refresh') }}
                     </x-button>
                     <x-button
                         color="violet"
@@ -38,7 +38,7 @@
                         :loading="$isTranslating"
                         icon="sparkles"
                     >
-                        {{ $isTranslating ? 'Translating...' : 'Auto Translate Missing' }}
+                        {{ $isTranslating ? __('Translating...') : __('Auto Translate Missing') }}
                     </x-button>
                 </div>
             </div>
@@ -53,7 +53,7 @@
                         <x-select.styled
                             :options="$this->contextOptions"
                             wire:model.live="activeContext"
-                            placeholder="Select context"
+                            placeholder="{{ __('Select context') }}"
                         />
                     </div>
 
@@ -63,7 +63,7 @@
                             <x-select.styled
                                 :options="$this->moduleOptions"
                                 wire:model.live="activeModule"
-                                placeholder="Select module"
+                                placeholder="{{ __('Select module') }}"
                             />
                         </div>
                     @endif
@@ -86,16 +86,16 @@
                         <x-slot:header class="bg-violet-50 dark:bg-violet-950/20 border-b border-violet-200 dark:border-violet-800">
                             <div class="flex items-center justify-between">
                                 <h3 class="text-lg font-semibold text-violet-900 dark:text-violet-100">
-                                    Translations for {{ strtoupper($activeLanguage) }}
+                                    {{ __('Translations for :language', ['language' => strtoupper($activeLanguage)]) }}
                                 </h3>
                             </div>
                         </x-slot:header>
 
                         <div class="overflow-x-auto">
                             <x-table :headers="[
-                                    ['index' => 'key', 'label' => 'Key'],
-                                    ['index' => 'value', 'label' => 'Value'],
-                                    ['index' => 'module', 'label' => 'Module'],
+                                    ['index' => 'key', 'label' => __('Key')],
+                                    ['index' => 'value', 'label' => __('Value')],
+                                    ['index' => 'module', 'label' => __('Module')],
                                     ['index' => 'action'],
                                 ]"
                                      :rows="$translations"
@@ -147,14 +147,14 @@
                                 @if($this->editingKey === $row['key'])
                                     <div class="flex items-center space-x-1">
                                             <span class="text-xs text-slate-500 dark:text-slate-400">
-                                                Enter/Ctrl+Enter to save, Esc to cancel
+                                                {{ __('Enter/Ctrl+Enter to save, Esc to cancel') }}
                                             </span>
                                     </div>
                                 @else
                                     <x-button
                                         wire:click="startEdit('{{ $row['key'] }}', {{ json_encode($row['value']) }})"
                                         icon="pencil-square"
-                                        text="Edit"
+                                        text="{{ __('Edit') }}"
                                         color="violet"
                                         size="sm"
                                         flat
@@ -169,10 +169,10 @@
                                 <x-icon name="language" class="mx-auto h-10 w-10"/>
                             </div>
                             <h3 class="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
-                                No translations found
+                                {{ __('No translations found') }}
                             </h3>
                             <p class="text-slate-500 dark:text-slate-400 mb-4">
-                                No translations found for <x-badge text="{{strtoupper($activeLanguage)}}" color="violet" outline sm/>. Use the Auto Translate button to generate translations.
+                                {{ __('No translations found for :language. Use the Auto Translate button to generate translations.', ['language' => strtoupper($activeLanguage)]) }}
                             </p>
                             <x-button
                                 color="violet"
@@ -180,7 +180,7 @@
                                 :loading="$isTranslating"
                                 icon="sparkles"
                             >
-                                {{ $isTranslating ? 'Translating...' : 'Start Auto Translation' }}
+                                {{ $isTranslating ? __('Translating...') : __('Start Auto Translation') }}
                             </x-button>
                         </div>
                     @endif
@@ -195,10 +195,10 @@
                         </svg>
                     </div>
                     <h3 class="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
-                        No language files found
+                        {{ __('No language files found') }}
                     </h3>
                     <p class="text-slate-500 dark:text-slate-400 mb-4">
-                        Click "Refresh Strings" to scan your application for translatable strings and create initial language files.
+                        {{ __('Click "Refresh Strings" to scan your application for translatable strings and create initial language files.') }}
                     </p>
                     <x-button
                         color="violet"
@@ -206,7 +206,7 @@
                         :loading="$isInitializing"
                         icon="magnifying-glass"
                     >
-                        {{ $isInitializing ? 'Scanning...' : 'Scan for Strings' }}
+                        {{ $isInitializing ? __('Scanning...') : __('Scan for Strings') }}
                     </x-button>
                 </div>
             </x-card>
