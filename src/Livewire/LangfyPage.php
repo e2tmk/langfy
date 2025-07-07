@@ -9,7 +9,7 @@ use Langfy\Langfy;
 use Livewire\Component;
 use TallStackUi\Traits\Interactions;
 
-class LangfyView extends Component
+class LangfyPage extends Component
 {
     use Interactions;
 
@@ -193,7 +193,7 @@ class LangfyView extends Component
 
     public function render()
     {
-        return view('langfy::livewire.langfy-view')
+        return view('langfy::livewire.langfy-page')
             ->layout('langfy::components.layouts.app');
     }
 
