@@ -24,11 +24,20 @@
                 </div>
                 <div class="flex items-center space-x-2">
                     <x-button
+                        href="https://langfy.e2tmk.com/introduction.html"
+                        color="slate"
+                        icon="book-open"
+                        target="_blank"
+                        md
+                    >
+                        {{ __("Docs") }}
+                    </x-button>
+                    <x-button
                         color="slate"
                         wire:click="refreshStrings"
                         :loading="$isInitializing"
                         icon="arrow-path"
-                        size="sm"
+                        md
                     >
                         {{ __('Refresh') }}
                     </x-button>
@@ -37,6 +46,7 @@
                         wire:click="translateMissingStrings(true)"
                         :loading="$isTranslating"
                         icon="sparkles"
+                        md
                     >
                         {{ $isTranslating ? __('Translating...') : __('Auto Translate Missing') }}
                     </x-button>
