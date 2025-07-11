@@ -1,7 +1,10 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-Ds5Oa3ma.css",
+    "file": "assets/app.css",
     "src": "resources/css/app.css",
-    "isEntry": true
+    "isEntry": true,
+    "names": [
+      "app.css"
+    ]
   }
 }

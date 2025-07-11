@@ -3,9 +3,9 @@
 
 @plugin '@tailwindcss/forms';
 
-@source '../../vendor/tallstackui/tallstackui/**/*.php';
+@source '../../vendor/tallstackui/tallstackui';
 
 @source "../views";
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../**/*.blade.php';
 
 @custom-variant dark (&:where(.dark, .dark *));
