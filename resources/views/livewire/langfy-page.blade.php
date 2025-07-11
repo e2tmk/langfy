@@ -81,10 +81,6 @@
             </div>
         </div>
 
-        <div wire:show="isTranslating">
-            <x-progress percent="{{$translationProgress}}" />
-        </div>
-
         <!-- Language Tabs -->
         @if (filled($availableLanguages))
             <div class="my-8">

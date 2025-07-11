@@ -8,7 +8,7 @@
 
     <tallstackui:script />
     @livewireStyles
-    @vite(['resources/css/app.css'])
+    <link href="{{ asset('vendor/langfy/assets/app.css') }}" rel="stylesheet">
 </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen">
