@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ config('app.name', 'Laravel') }}</title>
 
-    <tallstackui:script />
+    <script src="{{ asset('vendor/langfy/assets/tallstackui.js') }}" defer=""></script>
+    <link href="{{ asset('vendor/langfy/assets/tallstackui.css') }}" rel="stylesheet" type="text/css">
     @livewireStyles
     <link href="{{ asset('vendor/langfy/assets/app.css') }}" rel="stylesheet">
 </head>

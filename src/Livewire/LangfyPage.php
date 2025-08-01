@@ -35,6 +35,10 @@ class LangfyPage extends Component
 
     public string $editingValue = '';
 
+    // Adicione essas propriedades públicas
+    public array $contextOptions = [];
+    public array $moduleOptions = [];
+
     protected function rules()
     {
         return [
@@ -48,6 +52,9 @@ class LangfyPage extends Component
         $this->loadAvailableModules();
         $this->loadAvailableLanguages();
 
+        $this->loadContextOptions();
+        $this->loadModuleOptions();
+
         if (blank($this->activeLanguage) && filled($this->availableLanguages)) {
             $this->activeLanguage = $this->availableLanguages[0];
         }
@@ -55,9 +62,35 @@ class LangfyPage extends Component
         $this->loadStrings();
     }
 
+    public function loadContextOptions(): void
+    {
+        $baseOptions = [
+            ['label' => __('Application'), 'value' => Context::Application->value],
+            ['label' => __('Module'), 'value' => Context::Module->value],
+        ];
+
+        if (empty($this->availableModules)) {
+            $this->contextOptions = collect($baseOptions)
+                ->where('value', Context::Application->value)
+                ->values()
+                ->toArray();
+        } else {
+            $this->contextOptions = $baseOptions;
+        }
+    }
+
+    public function loadModuleOptions(): void
+    {
+        $this->moduleOptions = collect($this->availableModules)
+            ->map(fn ($module) => ['label' => $module, 'value' => $module])
+            ->toArray();
+    }
+
     public function loadAvailableModules(): void
     {
         $this->availableModules = Langfy::utils()->availableModules();
+        $this->loadContextOptions();
+        $this->loadModuleOptions();
     }
 
     public function loadAvailableLanguages(): void
@@ -262,30 +295,6 @@ class LangfyPage extends Component
         $moduleName = $this->activeContext === Context::Module->value ? $this->activeModule : null;
 
         return [$context, $moduleName];
-    }
-
-    public function getContextOptionsProperty(): array
-    {
-        $baseOptions = [
-            ['label' => __('Application'), 'value' => Context::Application->value],
-            ['label' => __('Module'), 'value' => Context::Module->value],
-        ];
-
-        if (empty($this->availableModules)) {
-            return collect($baseOptions)
-                ->where('value', Context::Application->value)
-                ->values()
-                ->toArray();
-        }
-
-        return $baseOptions;
-    }
-
-    public function getModuleOptionsProperty(): array
-    {
-        return collect($this->availableModules)
-            ->map(fn ($module) => ['label' => $module, 'value' => $module])
-            ->toArray();
     }
 
     public function shouldShowModuleSelection(): bool
