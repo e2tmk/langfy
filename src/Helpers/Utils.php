@@ -36,6 +36,33 @@ class Utils
         File::put($filePath, json_encode($mergedTranslations, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 
+    public function synchronizeStringsFiles(array $strings, string $targetLanguageFilePath): void
+    {
+        File::ensureDirectoryExists(dirname($targetLanguageFilePath));
+
+        $targetStrings = [];
+
+        if (File::exists($targetLanguageFilePath)) {
+            $targetStrings = json_decode(File::get($targetLanguageFilePath), true) ?? [];
+        }
+
+        $normalizedStrings = $this->normalizeStringsArray($strings);
+
+        $synchronizedStrings = collect($normalizedStrings)
+            ->mapWithKeys(function ($value, $key) use ($targetStrings) {
+                if (is_numeric($key)) {
+                    $actualKey = $value;
+
+                    return [$actualKey => $targetStrings[$actualKey] ?? ''];
+                }
+
+                return [$key => $targetStrings[$key] ?? ''];
+            })
+            ->toArray();
+
+        File::put($targetLanguageFilePath, json_encode($synchronizedStrings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    }
+
     public function laravelModulesEnabled(): bool
     {
         $modulesDir = config('modules.paths.modules');
@@ -104,7 +131,7 @@ class Utils
             return self::$method(...$args);
         }
 
-        $instance = new self();
+        $instance = new self;
 
         if (method_exists($instance, $method)) {
             return $instance->$method(...$args);

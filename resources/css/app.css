@@ -1,0 +1,11 @@
+@import "tailwindcss";
+@import '../../vendor/tallstackui/tallstackui/css/v4.css';
+
+@plugin '@tailwindcss/forms';
+
+@source '../../vendor/tallstackui/tallstackui';
+
+@source "../views";
+@source '../**/*.blade.php';
+
+@custom-variant dark (&:where(.dark, .dark *));
