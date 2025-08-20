@@ -2,6 +2,12 @@
 
 All notable changes to `langfy` will be documented in this file.
 
+## v0.1.1 - 2025-08-20
+
+**Full Changelog**: https://github.com/e2tmk/langfy/compare/v0.1.0...v0.1.1
+
+- fix(ai): remove quoted values in buildPrompt to prevent escaped quotes in translations; add optional unquote guard on extraction
+
 ## v0.1.0 - 2025-07-01
 
 ### What's Changed
