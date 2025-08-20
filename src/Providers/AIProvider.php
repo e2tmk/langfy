@@ -76,12 +76,12 @@ class AIProvider
     protected function buildPrompt(array $strings): string
     {
         $stringsList = collect($strings)
-            ->map(fn ($value, $key): string => "{$key}: \"{$value}\"")
+            ->map(fn($value, $key): string => "{$key}: {$value}")
             ->values()
             ->implode("\n");
 
         return "Translate the following strings from {$this->fromLanguage} to {$this->toLanguage}. " .
-            "Keep the original format and preserve any HTML or placeholders. " .
+            "Keep the original format and preserve any HTML or placeholders. Do not surround translations with quotes. " .
             "Note: " . self::QUOTE_PLACEHOLDER . " represents double quotes in the original text.\n\n" .
             $stringsList;
     }
@@ -122,7 +122,10 @@ class AIProvider
 
         foreach ($properties as $originalString => $translatedString) {
             if (is_string($translatedString)) {
-                $translations[$originalString] = $translatedString;
+                $clean = is_string($translatedString) && strlen($translatedString) >= 2
+                    && $translatedString[0] === '"' && $translatedString[-1] === '"' ? substr($translatedString, 1, -1)
+                    : $translatedString;
+                $translations[$originalString] = $clean;
             }
         }
 
