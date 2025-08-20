@@ -2,6 +2,16 @@
 
 All notable changes to `langfy` will be documented in this file.
 
+## v0.1.2 - 2025-08-20
+
+### What's Changed
+
+* chore(deps): bump actions/checkout from 4 to 5 by @dependabot[bot] in https://github.com/e2tmk/langfy/pull/7
+
+**Full Changelog**: https://github.com/e2tmk/langfy/compare/v0.1.1...v0.1.2
+
+- feat(i18n): protect Laravel-style placeholders (:param) from being translated; add masking/restoration and prompt rule
+
 ## v0.1.1 - 2025-08-20
 
 **Full Changelog**: https://github.com/e2tmk/langfy/compare/v0.1.0...v0.1.1
