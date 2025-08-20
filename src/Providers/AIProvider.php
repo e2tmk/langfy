@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Langfy\Providers;
 
@@ -15,6 +15,7 @@ use Throwable;
 class AIProvider
 {
     protected const QUOTE_PLACEHOLDER = '@@QUOTE@@';
+    protected const PH_PREFIX = '@@PH@@';
 
     public function __construct(
         protected string $fromLanguage,
@@ -30,15 +31,17 @@ class AIProvider
 
     public function translate(array $strings): array
     {
-        // Replace quotes with placeholders in keys for schema compatibility
-        $processedStrings = $this->replaceQuotesInKeys($strings);
+        [$stringsProtected, $phMap] = $this->protectPlaceholders($strings);
+
+        $processedStrings = $this->replaceQuotesInKeys($stringsProtected);
 
         $prompt = $this->buildPrompt($processedStrings);
         $schema = $this->buildSchema($processedStrings);
 
         $translations = $this->executeWithRetry($prompt, $schema, $processedStrings);
 
-        // Restore original keys in the result
+        $translations = $this->restorePlaceholders($translations, $phMap);
+
         return $this->restoreOriginalKeys($translations, $strings);
     }
 
@@ -81,7 +84,7 @@ class AIProvider
             ->implode("\n");
 
         return "Translate the following strings from {$this->fromLanguage} to {$this->toLanguage}. " .
-            "Keep the original format and preserve any HTML or placeholders. Do not surround translations with quotes. " .
+            "Keep the original format and preserve any HTML or placeholders. Do not translate parameters that start with a colon (e.g., :count, :record) and do not surround translations with quotes. " .
             "Note: " . self::QUOTE_PLACEHOLDER . " represents double quotes in the original text.\n\n" .
             $stringsList;
     }
@@ -92,7 +95,7 @@ class AIProvider
             name: 'Translations',
             description: 'Translations for the provided strings',
             properties: array_map(
-                fn ($key): StringSchema => new StringSchema(
+                fn($key): StringSchema => new StringSchema(
                     $key,
                     "Translation to {$this->toLanguage}"
                 ),
@@ -151,9 +154,6 @@ class AIProvider
         config(["prism.providers.{$provider}.api_key" => $apiKey]);
     }
 
-    /**
-     * Replace double quotes in array keys with placeholders to avoid JSON Schema issues
-     */
     protected function replaceQuotesInKeys(array $strings): array
     {
         $processedStrings = [];
@@ -166,14 +166,10 @@ class AIProvider
         return $processedStrings;
     }
 
-    /**
-     * Restore original keys with quotes from the processed results
-     */
     protected function restoreOriginalKeys(array $translations, array $originalStrings): array
     {
         $restoredTranslations = [];
 
-        // Create a mapping from processed keys back to original keys
         $keyMapping = [];
 
         foreach (array_keys($originalStrings) as $originalKey) {
@@ -181,7 +177,6 @@ class AIProvider
             $keyMapping[$processedKey] = $originalKey;
         }
 
-        // Restore the original keys in translations
         foreach ($translations as $processedKey => $translation) {
             $originalKey = $keyMapping[$processedKey] ?? str_replace(self::QUOTE_PLACEHOLDER, '"', $processedKey);
 
@@ -190,5 +185,40 @@ class AIProvider
         }
 
         return $restoredTranslations;
+    }
+
+    protected function protectPlaceholders(array $strings): array
+    {
+        $map = [];
+        $i   = 0;
+
+        $mask = function (string $text) use (&$map, &$i): string {
+            return preg_replace_callback('/(?<!\\\\):[A-Za-z0-9_]+/', function ($m) use (&$map, &$i) {
+                $token       = self::PH_PREFIX . ($i++) . '@@';
+                $map[$token] = $m[0];
+                return $token;
+            }, $text);
+        };
+
+        $processed = [];
+        foreach ($strings as $k => $v) {
+            $processed[$k] = is_string($v) ? $mask($v) : $v;
+        }
+
+        return [$processed, $map];
+    }
+
+    protected function restorePlaceholders(array $translations, array $map): array
+    {
+        if (empty($map)) {
+            return $translations;
+        }
+
+        $restored = [];
+        foreach ($translations as $k => $v) {
+            $restored[$k] = is_string($v) ? strtr($v, $map) : $v;
+        }
+
+        return $restored;
     }
 }
