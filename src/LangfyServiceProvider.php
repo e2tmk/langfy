@@ -7,6 +7,8 @@ namespace Langfy;
 use Langfy\Console\Commands\FinderCommand;
 use Langfy\Console\Commands\TransCommand;
 use Langfy\Console\Commands\TranslateChunkCommand;
+use Langfy\Livewire\LangfyPage;
+use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -18,10 +20,18 @@ class LangfyServiceProvider extends PackageServiceProvider
             ->name('langfy')
             ->hasConfigFile()
             ->hasViews()
+            ->hasTranslations()
+            ->hasAssets()
+            ->hasRoutes(['web'])
             ->hasCommands([
                 FinderCommand::class,
                 TransCommand::class,
                 TranslateChunkCommand::class,
             ]);
+    }
+
+    public function bootingPackage(): void
+    {
+        Livewire::component('langfy.livewire.langfy-page', LangfyPage::class);
     }
 }
