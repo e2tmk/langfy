@@ -1,6 +1,6 @@
 {
     "name": "e2tmk/langfy",
-    "description": "This is my package langfy",
+    "description": "AI-powered translation package for Laravel applications with automatic string discovery and intelligent translation management ",
     "keywords": [
         "langfy",
         "laravel",
@@ -18,6 +18,11 @@
             "name": "Adryel Dearo",
             "email": "dearo.adryel@gmail.com",
             "role": "Developer"
+        },
+        {
+            "name": "Elias Olivtradet",
+            "email": "deoliveira.elias.eus@gmail.com",
+            "role": "Owner"
         }
     ],
     "require": {
