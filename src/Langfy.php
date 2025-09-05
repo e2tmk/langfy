@@ -107,6 +107,18 @@ class Langfy
         return $this->getNewStrings();
     }
 
+    /** Get all target languages from config file. */
+    public function getLanguages(): array
+    {
+        return $this->getTargetLanguages();
+    }
+
+    /** Get all strings from an specific language file (translated and untranslated). */
+    public function getAllStringsFor(string $language): array
+    {
+        return $this->getAllStringsForLanguage($language);
+    }
+
     /** Perform all configured operations. */
     public function perform(): array
     {
@@ -211,6 +223,21 @@ class Langfy
             })->toArray();
     }
 
+    /** Get all strings for an Language file. */
+    protected function getAllStringsForLanguage(string $language): array
+    {
+        $filePath = $this->getLanguageFilePath($language);
+
+        if (! file_exists($filePath)) {
+            return [];
+        }
+
+        return rescue(
+            fn (): mixed => json_decode(file_get_contents($filePath), true),
+            []
+        ) ?? [];
+    }
+
     /** Get untranslated strings for a specific target language. */
     protected function getUntranslatedStringsForLanguage(array $strings, string $targetLanguage): array
     {
@@ -233,7 +260,7 @@ class Langfy
     }
 
     /** Get the language file path. */
-    protected function getLanguageFilePath(?string $language = null): string
+    public function getLanguageFilePath(?string $language = null): string
     {
         $language ??= config('langfy.from_language', 'en');
 
@@ -257,7 +284,7 @@ class Langfy
             return is_array($this->translateTo) ? $this->translateTo : [$this->translateTo];
         }
 
-        return config()->array('langfy.to_languages');
+        return config()->array('langfy.to_language');
     }
 
     /** Get new strings that don't exist in the language file. */
