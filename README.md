@@ -6,6 +6,7 @@
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/e2tmk/langfy.svg?style=flat-square)](https://packagist.org/packages/e2tmk/langfy)
 [![Total Downloads](https://img.shields.io/packagist/dt/e2tmk/langfy.svg?style=flat-square)](https://packagist.org/packages/e2tmk/langfy)
+[![License](https://img.shields.io/packagist/l/e2tmk/langfy.svg?style=flat-square)](https://packagist.org/packages/e2tmk/langfy)
 
 A powerful Laravel package that automates the discovery, organization, and translation of internationalization strings using Artificial Intelligence.
 
