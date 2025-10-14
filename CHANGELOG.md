@@ -2,6 +2,21 @@
 
 All notable changes to `langfy` will be documented in this file.
 
+## v0.1.3 - 2025-10-14
+
+### What's Changed
+
+* Feat/translations UI by @zdearo in https://github.com/e2tmk/langfy/pull/6
+* Development by @edeoliv in https://github.com/e2tmk/langfy/pull/8
+* chore(deps): bump stefanzweifel/git-auto-commit-action from 6 to 7 by @dependabot[bot] in https://github.com/e2tmk/langfy/pull/9
+
+### New Contributors
+
+* @zdearo made their first contribution in https://github.com/e2tmk/langfy/pull/6
+* @edeoliv made their first contribution in https://github.com/e2tmk/langfy/pull/8
+
+**Full Changelog**: https://github.com/e2tmk/langfy/compare/v0.1.2...v0.1.3
+
 ## v0.1.2 - 2025-08-20
 
 ### What's Changed
