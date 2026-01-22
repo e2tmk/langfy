@@ -92,7 +92,7 @@ return [
         'api_key'     => env('LANGFY_AI_API_KEY', ''),
         'model'       => env('LANGFY_AI_MODEL', 'gpt-4o-mini'),
         'provider'    => env('LANGFY_AI_PROVIDER', \Prism\Prism\Enums\Provider::OpenAI),
-        'temperature' => env('LANGFY_AI_TEMPERATURE', 0.2),
+        'temperature' => env('LANGFY_AI_TEMPERATURE', 0.1),
     ],
 
     /*

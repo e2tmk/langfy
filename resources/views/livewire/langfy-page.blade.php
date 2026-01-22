@@ -1,7 +1,6 @@
 <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
     <div class="container mx-auto px-4 py-8">
         <x-toast />
-
         <!-- Header -->
         <div class="mb-8">
             <div class="flex items-center justify-between">
@@ -80,7 +79,6 @@
                 </div>
             </div>
         </div>
-
         <!-- Language Tabs -->
         @if (filled($availableLanguages))
             <div class="my-8">
@@ -96,7 +94,6 @@
                                 </h3>
                             </div>
                         </x-slot:header>
-
                         <div class="overflow-x-auto">
                             <x-table :headers="[
                                     ['index' => 'key', 'label' => __('Key')],
@@ -105,7 +102,6 @@
                                     ['index' => 'action'],
                                 ]"
                                      :rows="$translations"
-
                             >
                                 @interact('column_value', $row)
                                     @if($this->editingKey === $row['key'])
