@@ -2,6 +2,10 @@
 
 All notable changes to `langfy` will be documented in this file.
 
+## v0.1.5 - 2026-01-22
+
+**Full Changelog**: https://github.com/e2tmk/langfy/compare/v0.1.4...v0.1.5
+
 ## v0.1.4 - 2026-01-22
 
 ### What's Changed
