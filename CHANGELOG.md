@@ -2,6 +2,16 @@
 
 All notable changes to `langfy` will be documented in this file.
 
+## v0.1.4 - 2026-01-22
+
+### What's Changed
+
+* chore(deps): bump dependabot/fetch-metadata from 2.4.0 to 2.5.0 by @dependabot[bot] in https://github.com/e2tmk/langfy/pull/11
+* chore(deps): bump actions/checkout from 5 to 6 by @dependabot[bot] in https://github.com/e2tmk/langfy/pull/10
+* build(composer.json): update dependencies, adjust formatting by @edeoliv in https://github.com/e2tmk/langfy/pull/12
+
+**Full Changelog**: https://github.com/e2tmk/langfy/compare/v0.1.3...v0.1.4
+
 ## v0.1.3 - 2025-10-14
 
 ### What's Changed
