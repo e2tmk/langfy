@@ -2,6 +2,15 @@
 
 All notable changes to `langfy` will be documented in this file.
 
+## v0.1.6 - 2026-04-10
+
+### What's Changed
+
+* feat: add Laravel 13 and nwidart modules v13 compatibility
+* chore(deps): bump dependabot/fetch-metadata from 2.5.0 to 3.0.0 by @dependabot[bot] in https://github.com/e2tmk/langfy/pull/13
+
+**Full Changelog**: https://github.com/e2tmk/langfy/compare/v0.1.5...v0.1.6
+
 ## v0.1.5 - 2026-01-22
 
 **Full Changelog**: https://github.com/e2tmk/langfy/compare/v0.1.4...v0.1.5
